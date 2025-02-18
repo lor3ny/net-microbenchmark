@@ -1,5 +1,0 @@
-rank 0=cn15 slot=0
-rank 1=cn16 slot=0
-rank 2=cn17 slot=0
-rank 3=cn09 slot=0
-

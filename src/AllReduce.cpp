@@ -190,6 +190,16 @@ int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtyp
   return MPI_SUCCESS;
 }
 
+
+
+void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
+  // Simply copy input to output without any computation
+  for (int i = 0; i < *len; i++) {
+      ((int*)inout)[i] = -((int*)in)[i]; // Identity operation
+  }
+}
+
+
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
@@ -207,7 +217,8 @@ int main(int argc, char *argv[]) {
     int mib_count = 0;
     try {
         mib_count = stoi(argv[1]);  
-        cout << "Message is " << mib_count << " MiB" << endl;
+        if(rank == 0)
+          cout << "Message is " << mib_count << " MiB" << endl;
     } catch (const invalid_argument& e) {
         cout << "Not valid argument!" << endl;
         return EXIT_FAILURE;
@@ -229,12 +240,15 @@ int main(int argc, char *argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    MPI_Op noop_op;
+    MPI_Op_create((MPI_User_function *)noop, 1, &noop_op);
+
     double total_time = 0.0;
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
         double start_time = MPI_Wtime();
-        //MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
-        allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        //allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
         double end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
@@ -253,7 +267,7 @@ int main(int argc, char *argv[]) {
 
     float verifier = 0;
     for(int i = 0; i<msg_count; i++){
-        verifier += recv_buffer[i];
+      verifier += recv_buffer[i];
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

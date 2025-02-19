@@ -259,11 +259,8 @@ int main(int argc, char *argv[]) {
     }
     total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
 
-    double min_time, max_time, avg_time;
-    //MPI_Reduce(&total_time, &min_time, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-    //MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    //MPI_Reduce(&total_time, &avg_time, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    avg_time = avg_time/size;
+    double max_time;
+    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     float verifier = 0;
     for(int i = 0; i<msg_count; i++){
@@ -272,12 +269,12 @@ int main(int argc, char *argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //if(rank == 0){
-    float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-    float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
-    bandwidth = bandwidth / total_time;
-    cout << rank << " : "<< processor_name <<" : ALL REDUCE -> Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << total_time << ", Bandwidth: " << bandwidth << endl;
-    //}
+    if(rank == 0){
+      float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
+      float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
+      bandwidth = bandwidth / max_time;
+      cout << rank << " : "<< processor_name <<" : ALL REDUCE -> Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << total_time << ", Bandwidth: " << bandwidth << endl;
+    }
 
     free(send_buffer);
     free(recv_buffer);

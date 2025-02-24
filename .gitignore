@@ -33,3 +33,6 @@
 *.app
 
 /build
+execute.slrm
+/log_eth/*
+/log_ib/*

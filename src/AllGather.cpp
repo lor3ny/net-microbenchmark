@@ -125,16 +125,13 @@ int main(int argc, char *argv[]) {
     try {
         mib_count = stoi(argv[1]);  
         if(rank == 0)
-            cout << "Message is " << mib_count << " MiB - ALL GATHER";
+        cout << endl << "Message is " << mib_count << " MiB - ALL GATHER" << endl;
     } catch (const invalid_argument& e) {
         cout << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
-    cout << rank << " : "<< processor_name << " ";
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank = 0){
-        cout << endl;
-    }
+    cout << " {" << rank << " : "<< processor_name << "}" << endl;
 
     int BUFFER_SIZE = (mib_count * MiB1);
     int MSG_BUFFER_SIZE = BUFFER_SIZE / size;

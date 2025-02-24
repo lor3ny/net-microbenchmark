@@ -217,18 +217,15 @@ int main(int argc, char *argv[]) {
 
     int mib_count = 0;
     try {
-        mib_count = stoi(argv[1]);  
-        if(rank == 0)
-          cout << "Message is " << mib_count << " MiB - ALL REDUCE OPERATION NULL";
-    } catch (const invalid_argument& e) {
-        cout << "Not valid argument!" << endl;
-        return EXIT_FAILURE;
-    }
-    cout << rank << " : "<< processor_name << " ";
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(rank = 0){
-        cout << endl;
-    }
+      mib_count = stoi(argv[1]);  
+      if(rank == 0)
+      cout << endl << "Message is " << mib_count << " MiB - ALL REDUCE OPERATION NULL" << endl;
+  } catch (const invalid_argument& e) {
+      cout << "Not valid argument!" << endl;
+      return EXIT_FAILURE;
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  cout << " {" << rank << " : "<< processor_name << "}" << endl;
 
     int msg_count = (mib_count * MiB1)/sizeof(float);
     int BUFFER_SIZE = (mib_count * MiB1);

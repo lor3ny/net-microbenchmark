@@ -5,73 +5,47 @@
 #SBATCH --nodes=4 
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
-#SBATCH --partition=boost_usr_prod   
-#SBATCH --account=iscrc_ascend       
+#SBATCH --partition=cn-eth  
 #SBATCH --exclusive      
 
-module load GCC
-module load OpenMPI
 
 #export OMPI_MCA_base_verbose=100
 #export OMPI_MCA_btl_base_verbose=100
+#export OMPI_MCA_coll_base_verbose=1s
 
-#export OMPI_MCA_coll_base_verbose=1
 export OMPI_MCA_coll_tuned_use_dynamic_rules=1
 export OMPI_MCA_coll_tuned_allgather_algorithm=4
 export OMPI_MCA_coll_tuned_allgather_algorithm_segmentsize=4096
 export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
-#export OMPI_MCA_coll_tuned_dynamic_rules_filename="/home/lpiarulli/rules.txt"
-
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 2
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 4
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 16
-
-#mpirun -n 4 --rankfile rankfile.txt ./allreduce 2
-#mpirun -n 4 --rankfile rankfile.txt ./allreduce 4
-#mpirun -n 4 --rankfile rankfile.txt ./allreduce 16
 
 srun ./build/allgather 2 
 srun ./build/allgather 4
 srun ./build/allgather 16
-srun ./build/allgather 128
-srun ./build/allgather 1024
+#srun ./build/allgather 128
+#srun ./build/allgather 1024
 
 srun ./build/allreduce 2
 srun ./build/allreduce 4
 srun ./build/allreduce 16
-srun ./build/allreduce 128
-srun ./build/allreduce 1024
+#srun ./build/allreduce 128
+#srun ./build/allreduce 1024
 
 srun ./build/allreduceOPNULL 2
 srun ./build/allreduceOPNULL 4
 srun ./build/allreduceOPNULL 16
-srun ./build/allreduceOPNULL 128
-srun ./build/allreduceOPNULL 1024
+#srun ./build/allreduceOPNULL 128
+#srun ./build/allreduceOPNULL 1024
 
 srun ./build/reducescatter 2 
 srun ./build/reducescatter 4
 srun ./build/reducescatter 16
-srun ./build/reducescatter 128
-srun ./build/reducescatter 1024
+#srun ./build/reducescatter 128
+#srun ./build/reducescatter 1024
 
 srun ./build/reducescatterOPNULL 2 
 srun ./build/reducescatterOPNULL 4
 srun ./build/reducescatterOPNULL 16
-srun ./build/reducescatterOPNULL 128
-srun ./build/reducescatterOPNULL 1024
-
-
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 2
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 4
-#mpirun -n 4 --rankfile rankfile.txt ./allgather 16
-
-#--mca coll_base_verbose 1
-#ompi_info --param coll tuned --level 9      to see available algorithms
-
-# Set the mpirun flags to change the algorithm of all reduce
-#--mca coll_tuned_use_dynamic_rules 1 \
-#--mca coll_tuned_allreduce_algorithm 3 \
-#--mca coll_tuned_allreduce_algorithm_segmentsize 4096 \
-#--mca coll_tuned_allreduce_algorithm_tree_fanout 4
+#srun ./build/reducescatterOPNULL 128
+#srun ./build/reducescatterOPNULL 1024

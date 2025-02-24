@@ -204,6 +204,7 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     int rank, size, name_len;
+    double total_time = 0.0;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -218,10 +219,15 @@ int main(int argc, char *argv[]) {
     try {
         mib_count = stoi(argv[1]);  
         if(rank == 0)
-          cout << "Message is " << mib_count << " MiB" << endl;
+          cout << "Message is " << mib_count << " MiB - ALL REDUCE";
     } catch (const invalid_argument& e) {
         cout << "Not valid argument!" << endl;
         return EXIT_FAILURE;
+    }
+    cout << rank << " : "<< processor_name << " ";
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank = 0){
+        cout << endl;
     }
 
     int msg_count = (mib_count * MiB1)/sizeof(float);
@@ -238,12 +244,11 @@ int main(int argc, char *argv[]) {
         send_buffer[i] = (float) rank; 
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Op noop_op;
     MPI_Op_create((MPI_User_function *)noop, 1, &noop_op);
 
-    double total_time = 0.0;
+    MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
         double start_time = MPI_Wtime();
@@ -273,7 +278,7 @@ int main(int argc, char *argv[]) {
       float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
       float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
       bandwidth = bandwidth / max_time;
-      cout << rank << " : "<< processor_name <<" : ALL REDUCE -> Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << total_time << ", Bandwidth: " << bandwidth << endl;
+      cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << total_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(send_buffer);

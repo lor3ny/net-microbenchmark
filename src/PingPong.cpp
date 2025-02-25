@@ -5,8 +5,8 @@
 using namespace std;
 
 #define MiB1 1048576 
-#define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
+#define WARM_UP 100
+#define BENCHMARK_ITERATIONS 1000
 
 //#define BUFFER_SIZE (16 * MiB1 / sizeof(float)) DEBUG PURPOSE
 

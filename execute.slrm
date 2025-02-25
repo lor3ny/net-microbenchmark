@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --output=log_eth/%j.out
 #SBATCH --error=log_eth/%j.err
-#SBATCH --ntasks=4
-#SBATCH --nodes=4 
+#SBATCH --ntasks=5
+#SBATCH --nodes=5
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
-#SBATCH --partition=boost_usr_prod   
-#SBATCH --account=iscrc_ascend
-
+#SBATCH --partition=cn-eth
+#SBATCH --nodelist=cn[21,24,25,26]
+#SBATCH --exclusive
 
 #export OMPI_MCA_base_verbose=100
 #export OMPI_MCA_btl_base_verbose=100
@@ -19,6 +19,10 @@ export OMPI_MCA_coll_tuned_allgather_algorithm_segmentsize=4096
 export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
+
+srun ./build/all2all 2 
+srun ./build/all2all 4
+srun ./build/all2all 16
 
 srun ./build/allgather 2 
 srun ./build/allgather 4

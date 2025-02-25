@@ -4,8 +4,8 @@
 using namespace std;
 
 #define MiB1 1048576 
-#define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
+#define WARM_UP 100
+#define BENCHMARK_ITERATIONS 1000
 
 //#define BUFFER_SIZE (16 * MiB1 / sizeof(float)) DEBUG PURPOSE
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
         float bandwidth =  buffer_gib * size;
         bandwidth = bandwidth / max_time;
-        cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << " it0: "<< totdeb_time << endl;
+        cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(send_buffer);

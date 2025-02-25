@@ -5,8 +5,8 @@
 using namespace std;
 
 #define MiB1 1048576
-#define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
+#define WARM_UP 100
+#define BENCHMARK_ITERATIONS 1000
 
 
 void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     int DATA_COUNT = (BUFFER_SIZE / sizeof(int));
     float *send_buffer = (float*) malloc(BUFFER_SIZE); 
     float *recv_buffer = (float*) malloc(BUFFER_SIZE/size);
-    int *recvcounts = (int*)malloc(size * sizeof(int));
+    int *recvcounts = (int*) malloc(size);
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -100,6 +100,7 @@ int main(int argc, char *argv[]) {
 
     free(send_buffer);
     free(recv_buffer);
+    free(recvcounts);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

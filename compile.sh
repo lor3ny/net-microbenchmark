@@ -6,3 +6,4 @@ mpicxx src/AllGather.cpp -O3 -o build/allgather
 mpicxx src/AllReduceOPNULL.cpp -O3 -o build/allreduceOPNULL
 mpicxx src/ReduceScatterOPNULL.cpp -O3 -o build/reducescatterOPNULL
 mpicxx src/All2All.cpp -O3 -o build/all2all
+nvcc src/AllReduceSwingCUDA.cu -O3 -o build/allreduceSwingCUDA -lcudart -lcuda -lmpi

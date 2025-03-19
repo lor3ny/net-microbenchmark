@@ -5,8 +5,8 @@
 using namespace std;
 
 #define MiB1 1048576
-#define WARM_UP 100
-#define BENCHMARK_ITERATIONS 1000
+#define WARM_UP 10
+#define BENCHMARK_ITERATIONS 100
 
 
 void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     if(rank == 0){
         float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-        float bandwidth = (buffer_gib/size) * (size-1);
+        float bandwidth = buffer_gib * ((size-1)/(float)size);
         bandwidth = bandwidth / max_time;
         cout << "Buffer: " << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
     }

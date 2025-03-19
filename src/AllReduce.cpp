@@ -5,8 +5,8 @@
 using namespace std;
 
 #define MiB1 1048576
-#define WARM_UP 100
-#define BENCHMARK_ITERATIONS 1000
+#define WARM_UP 10
+#define BENCHMARK_ITERATIONS 100
 
 #define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
                                        EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
     try {
       mib_count = stoi(argv[1]);  
       if(rank == 0)
-      cout << endl << "Message is " << mib_count << " MiB - ALL REDUCE" << endl;
+        cout << endl << "Message is " << mib_count << " MiB - ALL REDUCE" << endl;
   } catch (const invalid_argument& e) {
       cout << "Not valid argument!" << endl;
       return EXIT_FAILURE;

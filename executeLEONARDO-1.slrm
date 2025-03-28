@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --output=log_eth/%j.out
 #SBATCH --error=log_eth/%j.err
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4  
+#SBATCH --nodes=16
+#SBATCH --ntasks-per-node=1  
 #SBATCH --cpus-per-task=1  
-#SBATCH --gpus-per-node=4
-#SBATCH --gres=gpu:4          
+#SBATCH --gpus-per-node=1
+#SBATCH --gres=gpu:1      
 #SBATCH --time=00:10:00  
 #SBATCH --partition=boost_usr_prod   
 #SBATCH --account=iscrc_ascend
@@ -22,41 +22,48 @@
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
 
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 4 B
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 8 B
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 16 B
+#srun ./build/allreduceSwingCUDA 1
+#srun ./build/allreduceSwingCUDA 2
+#srun ./build/allreduceSwingCUDA 4
+#srun ./build/allreduceSwingCUDA 8 
+#srun ./build/allreduceSwingCUDA 16
 
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 32 B
+srun ./build/allreduceBWSwingCUDA 1 B
+srun ./build/allreduceBWSwingCUDA 4 B
 
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 64 B
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 128 B
+srun ./build/allreduceBWSwingCUDA 8 B
+srun ./build/allreduceBWSwingCUDA 32 B
 
-#srun -m plane=2 ./build/allreduceMeshSwingCUDA 256 B
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 512 B
+srun ./build/allreduceBWSwingCUDA 64 B
+srun ./build/allreduceBWSwingCUDA 128 B
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 1 KiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 4 KiB
+srun ./build/allreduceBWSwingCUDA 256 B
+srun ./build/allreduceBWSwingCUDA 512 B
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 8 KiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 32 KiB
+srun ./build/allreduceBWSwingCUDA 1 KiB
+srun ./build/allreduceBWSwingCUDA 4 KiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 64 KiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 128 KiB
+srun ./build/allreduceBWSwingCUDA 8 KiB
+srun ./build/allreduceBWSwingCUDA 32 KiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 256 KiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 512 KiB
+srun ./build/allreduceBWSwingCUDA 64 KiB
+srun ./build/allreduceBWSwingCUDA 128 KiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 1 MiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 2 MiB
+srun ./build/allreduceBWSwingCUDA 256 KiB
+srun ./build/allreduceBWSwingCUDA 512 KiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 8 MiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 16 MiB
+srun ./build/allreduceBWSwingCUDA 1 MiB
+srun ./build/allreduceBWSwingCUDA 2 MiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 64 MiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 128 MiB
+srun ./build/allreduceBWSwingCUDA 8 MiB
+srun ./build/allreduceBWSwingCUDA 16 MiB
 
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 256 MiB
-srun -m plane=2 ./build/allreduceMeshSwingCUDA 512 MiB
+srun ./build/allreduceBWSwingCUDA 64 MiB
+srun ./build/allreduceBWSwingCUDA 128 MiB
+
+srun ./build/allreduceBWSwingCUDA 256 MiB
+srun ./build/allreduceBWSwingCUDA 512 MiB
+
 
 #srun ./build/all2all 2 
 #srun ./build/all2all 16

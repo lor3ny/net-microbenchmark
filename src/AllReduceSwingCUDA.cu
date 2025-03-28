@@ -60,12 +60,6 @@ __global__ void reduce_sum_kernel(const int *in, int *inout, size_t count) {
     idx = global_thread_idx + i*thread_count; 
     inout[idx] += in[idx]; 
   }
-
-  /*
-  for(int i = 0; i<count; i++){
-    inout[i] += in[i];
-  }
-  */
 }
 
 inline int log_2(int value) {
@@ -247,6 +241,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    
     cout << " {" << rank << " : "<< processor_name << "}" << endl;
 
     int msg_count = (mib_count * MiB1)/sizeof(int);
@@ -311,7 +306,7 @@ int main(int argc, char *argv[]) {
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
 
-    int verifier = 0;
+    uint64_t verifier = 0;
     for(int i = 0; i<msg_count; i++){
       verifier += h_recv_buffer[i];
     }

@@ -4,36 +4,14 @@
 
 using namespace std;
 
-#define MiB1 1048576 
+#define B1 1
+#define KiB1 1024
+#define MiB1 1048576
+#define GiB1 1073741824
 #define WARM_UP 10
 #define BENCHMARK_ITERATIONS 100
 
-//#define BUFFER_SIZE (16 * MiB1 / sizeof(float)) DEBUG PURPOSE
 
-/*
-void allgather_ring(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Comm comm) {
-    int rank, size;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &size);
-
-    // Copy the send buffer to the appropriate location in recv buffer
-    MPI_Aint extent, lb;
-    MPI_Type_get_extent(datatype, &lb,  &extent);
-    char *recv = (char *)recvbuf;
-    memcpy(recv + rank * count * extent, sendbuf, count * extent);
-
-    for (int step = 1; step < size; ++step) {
-        int send_to = (rank + 1) % size;
-        int recv_from = (rank - 1 + size) % size;
-
-        MPI_Sendrecv(
-            recv + ((rank - step + size) % size) * count * extent, count, datatype, send_to, 0,
-            recv + ((rank - step - 1 + size) % size) * count * extent, count, datatype, recv_from, 0,
-            comm, MPI_STATUS_IGNORE
-        );
-    }
-}
-*/
 
 static inline int copy_buffer_different_dt (const void *input_buffer, size_t scount,
                                             const MPI_Datatype sdtype, void *output_buffer,
@@ -102,38 +80,56 @@ double allgather_ring(const void *sbuf, size_t scount, MPI_Datatype sdtype,
   }
   double total_time = end_time - start_time;
   return total_time;
-
 }
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
-    int rank, size, name_len;
+    int rank, size, name_len, ret;
     double total_time = 0.0;
-    double totdeb_time = 0.0;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Get_processor_name(processor_name, &name_len);
 
-    if (argc < 2) {
+    if (argc < 3) {
         cerr << "Please, insert an integer as argument" << endl;
         return 1;  
     }
 
-    int mib_count = 0;
+    int size_count = 0;
     try {
-        mib_count = stoi(argv[1]);  
-        if(rank == 0)
-        cout << endl << "Message is " << mib_count << " MiB - ALL GATHER" << endl;
+      size_count = stoi(argv[1]);  
     } catch (const invalid_argument& e) {
-        cout << "Not valid argument!" << endl;
+      cerr << "Not valid argument!" << endl;
+      return EXIT_FAILURE;
+    }
+
+    char* size_type;
+    long long int multiplier_type = B1;
+    try {
+      size_type = argv[2];  
+      if(strcmp(size_type,"B") == 0){
+        multiplier_type = B1;
+      } else if(strcmp(size_type,"KiB") == 0){
+        multiplier_type = KiB1;
+      } else if(strcmp(size_type,"MiB") == 0){
+        multiplier_type = MiB1;
+      } else if(strcmp(size_type,"GiB") == 0){
+        multiplier_type = GiB1;
+      } else {
+        cerr << "Second argument is not valid!" << endl;
+        return EXIT_FAILURE;  
+      }
+    } catch (const invalid_argument& e) {
+        cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    cout << " {" << rank << " : "<< processor_name << "}" << endl;
 
-    int BUFFER_SIZE = (mib_count * MiB1);
+    if(size_count == 512 && strcmp(size_type, "B") == 0){
+        cout << " {" << rank << " : "<< processor_name << "}" << endl;
+    }
+    int BUFFER_SIZE = (size_count * multiplier_type);
     int MSG_BUFFER_SIZE = BUFFER_SIZE / size;
     int msg_count = MSG_BUFFER_SIZE / sizeof(float);
     float *send_buffer = (float*) malloc(MSG_BUFFER_SIZE); 
@@ -151,7 +147,6 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
         
-        double time_debug = 0;
         double start_time = MPI_Wtime();
         MPI_Allgather(send_buffer, msg_count, MPI_FLOAT, recv_buffer, msg_count, MPI_FLOAT, MPI_COMM_WORLD);
         //time_debug = allgather_ring(send_buffer, msg_count, MPI_FLOAT, recv_buffer, msg_count, MPI_FLOAT, MPI_COMM_WORLD);
@@ -159,14 +154,12 @@ int main(int argc, char *argv[]) {
 
         if(i>WARM_UP) {
             total_time += end_time - start_time;
-            totdeb_time += time_debug;
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
 
     }
     total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
-    totdeb_time = (double)(totdeb_time)/BENCHMARK_ITERATIONS;
 
     double max_time;
     MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -182,7 +175,7 @@ int main(int argc, char *argv[]) {
         float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
         float bandwidth =  buffer_gib * ((size-1)/(float)size); 
         bandwidth = bandwidth / max_time;
-        cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << " it0: "<< totdeb_time << endl;
+        cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(send_buffer);

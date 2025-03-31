@@ -1,0 +1,54 @@
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 4 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 8 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 64 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 512 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 4 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 32 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 256 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 2 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 16 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/all2all 128 MiB
+
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 4 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 8 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 64 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 512 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 4 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 32 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 256 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 2 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 16 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allgather 128 MiB
+
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 4 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 8 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 64 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 512 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 4 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 32 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 256 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 2 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 16 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/allreduce 128 MiB
+
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 4 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 8 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 64 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 512 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 4 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 32 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 256 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 2 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 16 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter 128 MiB
+
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 4 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 8 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 64 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 512 B
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 4 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 32 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 256 KiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 2 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 16 MiB
+mpirun --allow-run-as-root -N 4 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/reducescatter_noop 128 MiB

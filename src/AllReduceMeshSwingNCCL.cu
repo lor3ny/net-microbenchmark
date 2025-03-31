@@ -17,7 +17,6 @@ using namespace std;
 #define WARM_UP 10
 #define BENCHMARK_ITERATIONS 100
 
-
 #define LIBSWING_MAX_SUPPORTED_DIMENSIONS 3 // We support up to 3D torus
 #define LIBSWING_MAX_STEPS 20
 

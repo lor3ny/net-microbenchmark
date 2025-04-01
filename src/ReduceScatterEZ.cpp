@@ -4,29 +4,13 @@
 
 using namespace std;
 
-#define B1 1
-#define KiB1 1024
 #define MiB1 1048576
-#define GiB1 1073741824
-#define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
+#define WARM_UP 100
+#define BENCHMARK_ITERATIONS 1000
 
-static inline ptrdiff_t datatype_span(MPI_Datatype dtype, size_t count, ptrdiff_t *gap) {
-    if(count == 0) {
-        *gap = 0;
-        return 0;                                 // No memory span required for zero repetitions
-    }
 
-    MPI_Aint lb, extent;
-    MPI_Aint true_lb, true_extent;
-
-    // Get extend and true extent (true extent does not include padding)
-    MPI_Type_get_extent(dtype, &lb, &extent);
-    MPI_Type_get_true_extent(dtype, &true_lb, &true_extent);
-
-    *gap = true_lb;                             // Store the true lower bound
-
-    return true_extent + extent * (count - 1);  // Calculate the total memory span
+void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
+  return;
 }
 
 
@@ -44,7 +28,7 @@ static inline int copy_buffer(const void *input_buffer, void *output_buffer,
 }
 
 
-double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
+int reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     MPI_Datatype dtype, MPI_Op op, MPI_Comm comm)
 {
     int ret, line, rank, size, i, k, recv_from, send_to;
@@ -55,7 +39,6 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     char *inbuf_free[2] = {NULL, NULL}, *inbuf[2] = {NULL, NULL};
     ptrdiff_t extent, lb, max_real_segsize, dsize, gap = 0;
     MPI_Request reqs[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
-    double start, end, total_time = 0.0;
 
     ret = MPI_Comm_size(comm, &size);
     ret = MPI_Comm_rank(comm, &rank);
@@ -95,11 +78,8 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     accumbuf_free = (char*)malloc(dsize);
     accumbuf = accumbuf_free - gap;
 
-    start = MPI_Wtime();
     inbuf_free[0] = (char*)malloc(max_real_segsize);
     inbuf[0] = inbuf_free[0] - gap;
-    end = MPI_Wtime();
-    total_time += end - start;
 
     if(size > 2) {
         inbuf_free[1] = (char*)malloc(max_real_segsize);
@@ -110,10 +90,8 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     if(MPI_IN_PLACE == sbuf) {
         sbuf = rbuf;
     }
-    start = MPI_Wtime();
+
     ret = copy_buffer((char*) sbuf, accumbuf, total_count, dtype);
-    end = MPI_Wtime();
-    total_time += end - start;
 
     /* Computation loop */
 
@@ -156,7 +134,7 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
         rbuf[prevblock] = inbuf[inbi ^ 0x1] (op) rbuf[prevblock]
         */
         tmprecv = accumbuf + displs[prevblock] * extent;
-        //MPI_Reduce_local(inbuf[inbi ^ 0x1], tmprecv, rcounts[prevblock], dtype, op);
+        MPI_Reduce_local(inbuf[inbi ^ 0x1], tmprecv, rcounts[prevblock], dtype, op);
 
         /* send previous block to send_to */
         ret = MPI_Send(tmprecv, rcounts[prevblock], dtype, send_to, 0, comm);
@@ -168,124 +146,65 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     /* Apply operation on the last block (my block)
     rbuf[rank] = inbuf[inbi] (op) rbuf[rank] */
     tmprecv = accumbuf + displs[rank] * extent;
-    //MPI_Reduce_local(inbuf[inbi], tmprecv, rcounts[rank], dtype, op);
+    MPI_Reduce_local(inbuf[inbi], tmprecv, rcounts[rank], dtype, op);
 
     /* Copy result from tmprecv to rbuf */
-    start = MPI_Wtime();
     ret = copy_buffer(tmprecv, (char *)rbuf, rcounts[rank], dtype);
-    end = MPI_Wtime();
-    total_time += end - start;
 
     if(NULL != displs) free(displs);
     if(NULL != accumbuf_free) free(accumbuf_free);
     if(NULL != inbuf_free[0]) free(inbuf_free[0]);
     if(NULL != inbuf_free[1]) free(inbuf_free[1]);
 
-    return total_time;
+    return MPI_SUCCESS;
 }
 
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
-    int rank, size, name_len, ret;
+    int rank, size;
     double total_time = 0.0;
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Get_processor_name(processor_name, &name_len);
 
-    if (argc < 3) {
-        cerr << "Please, insert an integer as argument" << endl;
-        return 1;  
-    }
-
-    int size_count = 0;
+    int mib_count = 0;
     try {
-      size_count = stoi(argv[1]);  
+        mib_count = stoi(argv[1]);  
     } catch (const invalid_argument& e) {
-      cerr << "Not valid argument!" << endl;
-      return EXIT_FAILURE;
-    }
-
-    char* size_type;
-    long long int multiplier_type = B1;
-    try {
-      size_type = argv[2];  
-      if(strcmp(size_type,"B") == 0){
-        multiplier_type = B1;
-      } else if(strcmp(size_type,"KiB") == 0){
-        multiplier_type = KiB1;
-      } else if(strcmp(size_type,"MiB") == 0){
-        multiplier_type = MiB1;
-      } else if(strcmp(size_type,"GiB") == 0){
-        multiplier_type = GiB1;
-      } else {
-        cerr << "Second argument is not valid!" << endl;
-        return EXIT_FAILURE;  
-      }
-    } catch (const invalid_argument& e) {
-        cerr << "Not valid argument!" << endl;
+        cout << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
 
-    if(size_count == 512 && strcmp(size_type, "B") == 0){
-        cout << " {" << rank << " : "<< processor_name << "}" << endl;
-    }
-
-    int BUFFER_SIZE = (size_count * multiplier_type);
-    int msg_count = BUFFER_SIZE/sizeof(float);
+    int msg_count = (mib_count * MiB1)/sizeof(float);
+    int BUFFER_SIZE = (mib_count * MiB1);
     int DATA_COUNT = (BUFFER_SIZE / sizeof(int));
     float *send_buffer = (float*) malloc(BUFFER_SIZE); 
     float *recv_buffer = (float*) malloc(BUFFER_SIZE/size);
     int *recvcounts = (int*) malloc(size);
-    if (send_buffer == NULL || recv_buffer == NULL) {
-        fprintf(stderr, "Memory allocation failed!\n");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        return -1;
-    }
+
 
     for (int i = 0; i < size; i++) {
         recvcounts[i] = DATA_COUNT / size; 
     }
 
-
     for (int i = 0; i < msg_count; i++) {
         send_buffer[i] = (float) rank; 
     }
 
+    //MPI_Op noop_op;
+    //MPI_Op_create((MPI_User_function *)noop, 1, &noop_op);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
-
-        double remove_time = 0.0;
-        double start_time = MPI_Wtime();
-        remove_time = reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        double end_time = MPI_Wtime();
-
-        if(i>WARM_UP) {
-          total_time += end_time - start_time - remove_time;
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
-
-    double max_time;
-    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-    float verifier = 0;
-    for(int i = 0; i<msg_count/size; i++){
-      verifier += recv_buffer[i];
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
+    double start_time = MPI_Wtime();
+    reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    double end_time = MPI_Wtime();
+    total_time += end_time - start_time;
 
     if(rank == 0){
         float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-        float bandwidth = buffer_gib * ((size-1)/(float)size);
-        bandwidth = bandwidth / max_time;
-        cout << "REDUCE-SCATTER NO MEMCPY NO COMPUTATION Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
+        float bandwidth = (buffer_gib/size) * (size-1);
+        bandwidth = bandwidth / total_time;
+        cout << "Buffer: " << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << mib_count << " MiB, Latency: " << total_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(send_buffer);

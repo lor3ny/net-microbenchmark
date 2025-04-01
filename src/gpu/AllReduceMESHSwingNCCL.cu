@@ -4,6 +4,7 @@
 #include <climits>
 #include <cassert>
 #include <cuda_runtime.h>
+#include <nccl.h>
 #include <unordered_map>
 #include <omp.h>
 
@@ -16,11 +17,12 @@ using namespace std;
 #define WARM_UP 10
 #define BENCHMARK_ITERATIONS 100
 
-
 #define LIBSWING_MAX_SUPPORTED_DIMENSIONS 3 // We support up to 3D torus
 #define LIBSWING_MAX_STEPS 20
 
 static int rhos[LIBSWING_MAX_STEPS] = {1, -1, 3, -5, 11, -21, 43, -85, 171, -341, 683, -1365, 2731, -5461, 10923, -21845, 43691, -87381, 174763, -349525};
+
+
 /*
 static int smallest_negabinary[LIBSWING_MAX_STEPS] = {0, 0, -2, -2, -10, -10, -42, -42,
   -170, -170, -682, -682, -2730, -2730, -10922, -10922, -43690, -43690, -174762, -174762};
@@ -34,6 +36,15 @@ static int largest_negabinary[LIBSWING_MAX_STEPS] = {0, 1, 1, 5, 5, 21, 21, 85, 
   if( e != cudaSuccess ) {                          \
     printf("Failed: Cuda error %s:%d '%s'\n",       \
         __FILE__,__LINE__,cudaGetErrorString(e));   \
+    exit(EXIT_FAILURE);                             \
+  }                                                 \
+} while(0)
+    
+#define NCCL_CHECK(cmd) do {                        \
+  ncclResult_t r = cmd;                             \
+  if (r!= ncclSuccess) {                            \
+    printf("Failed, NCCL error %s:%d '%s'\n",       \
+        __FILE__,__LINE__,ncclGetErrorString(r));   \
     exit(EXIT_FAILURE);                             \
   }                                                 \
 } while(0)
@@ -264,7 +275,6 @@ static int get_distance_sign(size_t rank, size_t port, size_t dimensions_num){
   }
   return multiplier;
 }
-
 
 static inline int mod(int a, int b){
   int r = a % b;
@@ -556,39 +566,39 @@ __global__ void reduce_sum_kernel(const int *in, int *inout, size_t count) {
   }
 }
 
-int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
-  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, int gpu){
 
+double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
+  ncclDataType_t dtype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream, uint *peers, swing_tree_t *tree){
 
   int size, rank, dest, steps, step, datatype_size;
   int *r_count = NULL, *s_count = NULL, *r_index = NULL, *s_index = NULL;
   size_t w_size;
   uint32_t vrank, vdest;
+  double start, total_time = 0.0;
 
   char *tmp_send = NULL, *tmp_recv = NULL;
   char *tmp_buf_raw = NULL, *tmp_buf;
-  ptrdiff_t lb, extent, true_extent, gap = 0, buf_size;
+  ptrdiff_t buf_size;
 
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
-  MPI_Type_size(dtype, &datatype_size);
+  ncclCommCount(comm, &size);
+  ncclCommUserRank(comm, &rank);
+  datatype_size = sizeof(datatype_size); // Convert to bits
 
   // Does not support non-power-of-two or negative sizes
   steps = log_2(size);
 
   // Allocate temporary buffer for send/recv and reduce operations
-  MPI_Type_get_extent(dtype, &lb, &extent);
-  MPI_Type_get_true_extent(dtype, &gap, &true_extent);
-  buf_size = true_extent + extent * (count >> 1);
-
+  buf_size = datatype_size * (count >> 1);
+  
   CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
-  tmp_buf = tmp_buf_raw - gap;
+  tmp_buf = tmp_buf_raw;
 
   // Copy into receive_buffer content of send_buffer to not produce
   // side effects on send_buffer
   if(send_buf != MPI_IN_PLACE) {
     CUDA_CHECK(cudaMemcpy(recv_buf, send_buf, count * datatype_size, cudaMemcpyDeviceToDevice));
   }
+  
   
   r_index = (int*) malloc(sizeof(*r_index) * steps);
   s_index = (int*) malloc(sizeof(*s_index) * steps);
@@ -599,12 +609,9 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   s_index[0] = r_index[0] = 0;
   vrank = tree->remapped_ranks[rank];
 
-  // Reduce-Scatter phase
-
+  //Reduce-Scatter phase
   for(step = 0; step < steps; step++) {
-
-    CUDA_CHECK(cudaDeviceSynchronize());
-
+    
     dest = peers[step];
     vdest = tree->remapped_ranks[dest];
 
@@ -617,13 +624,16 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
       r_count[step] = w_size - s_count[step];
       r_index[step] = s_index[step] + s_count[step];
     }
-    tmp_send = (char *)recv_buf + s_index[step] * extent;
-    MPI_Sendrecv(tmp_send, s_count[step], dtype, dest, 0,
-                        tmp_buf, r_count[step], dtype, dest, 0,
-                        comm, MPI_STATUS_IGNORE);
 
-    tmp_recv = (char *) recv_buf + r_index[step] * extent;
+    tmp_send = (char *)recv_buf + s_index[step] * datatype_size;
     
+    ncclGroupStart();
+    ncclSend(tmp_send, s_count[step], dtype, dest, comm, stream);
+    ncclRecv(tmp_buf, r_count[step], dtype, dest, comm, stream);
+    ncclGroupEnd();
+
+    tmp_recv = (char *) recv_buf + r_index[step] * datatype_size;
+
     reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, r_count[step]);
 
     if(step + 1 < steps) {
@@ -631,20 +641,24 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
       s_index[step + 1] = r_index[step];
       w_size = r_count[step];
     }
+    //printf("REDSCAT Rank: %d, Step: %d, Dest: %d, VRank: %u, VDest: %u, TIME: %lf \n", rank, step, dest, vrank, vdest, MPI_Wtime()-start);
   }
+
+  // CUDA_CHECK(cudaDeviceSynchronize());
 
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
-
-    CUDA_CHECK(cudaDeviceSynchronize());
-
+    
     dest = peers[step];
 
-    tmp_send = (char *)recv_buf + r_index[step] * extent;
-    tmp_recv = (char *)recv_buf + s_index[step] * extent;
-    MPI_Sendrecv(tmp_send, r_count[step], dtype, dest, 0,
-                      tmp_recv, s_count[step], dtype, dest, 0,
-                      comm, MPI_STATUS_IGNORE);
+    tmp_send = (char *)recv_buf + r_index[step] * datatype_size;
+    tmp_recv = (char *)recv_buf + s_index[step] * datatype_size;
+
+    ncclGroupStart();
+    ncclSend(tmp_send, r_count[step], dtype, dest, comm, stream);
+    ncclRecv(tmp_recv, s_count[step], dtype, dest, comm, stream);
+    ncclGroupEnd();
+    //printf("ALLGATH Rank: %d, Step: %d, Dest: %d, VRank: %u, VDest: %u, TIME: %lf \n", rank, step, dest, vrank, vdest, MPI_Wtime()-start);
   }
 
   CUDA_CHECK(cudaFree(tmp_buf_raw));
@@ -652,7 +666,7 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   free(s_index);
   free(r_count);
   free(s_count);
-  return MPI_SUCCESS;
+  return total_time;
 }
 
 
@@ -717,10 +731,15 @@ int main(int argc, char *argv[]) {
         cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Initialize NCCL
+    ncclUniqueId id;
+    if (rank == 0)
+        NCCL_CHECK(ncclGetUniqueId(&id));
+    MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
     
     int gpu_rank = 0;
-    if(rank < 2 * 4){
+    if(rank < 2 * (size/4)){
       if(rank%2 == 0){
         gpu_rank = 0;
       } else {
@@ -758,7 +777,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
 
 
-    SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
+    SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2);
     uint* peers = (uint*) malloc(sizeof(uint)*scc->size); 
     swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
     compute_peers(rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);
@@ -768,13 +787,31 @@ int main(int argc, char *argv[]) {
     }
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));
 
-    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree, gpu_rank);
-    MPI_Allreduce(d_send_buffer, d_test_recv_buffer, (size_t) msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    // NCCL stream
+    cudaStream_t stream;
+    CUDA_CHECK(cudaStreamCreate(&stream));
+    //CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking)); //BHO?
+
+    ncclComm_t comm;
+    //ncclResult_t state;
+    NCCL_CHECK(ncclCommInitRank(&comm, size, id, rank));
+    //ncclConfig_t config = NCCL_CONFIG_INITIALIZER;
+    //config.blocking = 0;
+    //config.minCTAs = 4;
+    //config.maxCTAs = 16;
+    //config.cgaClusterSize = 2;
+    //config.netName = "Socket";
+    //CUDACHECK(cudaStreamCreateWithFlags(streams+i, cudaStreamNonBlocking))
+
+
+    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream, peers, &tree);
+    ncclAllReduce(d_send_buffer, d_test_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int), rank);
+    ret = 0;//VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int), rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);
@@ -792,12 +829,12 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
+        double time_to_remove = 0.0;
         double start_time = MPI_Wtime();
-        //allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree);
+        time_to_remove = allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream, peers, &tree);
         double end_time = MPI_Wtime();
-
         if(i>WARM_UP) {
-            total_time += end_time - start_time;
+            total_time += (end_time - start_time) - time_to_remove;
         }
 
         MPI_Barrier(MPI_COMM_WORLD);

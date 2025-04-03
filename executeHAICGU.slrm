@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --output=log_eth/%j.out
-#SBATCH --error=log_eth/%j.err
-#SBATCH --ntasks=5
-#SBATCH --nodes=5
+#SBATCH --output=logs/%j.out
+#SBATCH --error=logs/%j.err
+#SBATCH --ntasks=4
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
 #SBATCH --partition=cn-eth
-#SBATCH --nodelist=cn[21,24,25,26]
+#SBATCH --account=dcn
 #SBATCH --exclusive
 
 #export OMPI_MCA_base_verbose=100
@@ -20,36 +20,30 @@ export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
 
-srun ./build/all2all 2 
-srun ./build/all2all 4
-srun ./build/all2all 16
+srun ./build/all2all 2 MiB
+srun ./build/all2all 4 MiB
+srun ./build/all2all 16 MiB
 
-srun ./build/allgather 2 
-srun ./build/allgather 4
-srun ./build/allgather 16
+srun ./build/allgather 2 MiB
+srun ./build/allgather 4 MiB
+srun ./build/allgather 16 MiB
 #srun ./build/allgather 128
 #srun ./build/allgather 1024
 
-srun ./build/allreduce 2
-srun ./build/allreduce 4
-srun ./build/allreduce 16
+srun ./build/allreduce 2 MiB
+srun ./build/allreduce 4 MiB
+srun ./build/allreduce 16 MiB
 #srun ./build/allreduce 128
 #srun ./build/allreduce 1024
 
-srun ./build/allreduceOPNULL 2
-srun ./build/allreduceOPNULL 4
-srun ./build/allreduceOPNULL 16
-#srun ./build/allreduceOPNULL 128
-#srun ./build/allreduceOPNULL 1024
-
-srun ./build/reducescatter 2 
-srun ./build/reducescatter 4
-srun ./build/reducescatter 16
+srun ./build/reducescatter 2 MiB
+srun ./build/reducescatter 4 MiB
+srun ./build/reducescatter 16 MiB
 #srun ./build/reducescatter 128
 #srun ./build/reducescatter 1024
 
-srun ./build/reducescatterOPNULL 2 
-srun ./build/reducescatterOPNULL 4
-srun ./build/reducescatterOPNULL 16
+srun ./build/reducescatter_noop 2 MiB
+srun ./build/reducescatter_noop 4 MiB
+srun ./build/reducescatter_noop 16 MiB
 #srun ./build/reducescatterOPNULL 128
 #srun ./build/reducescatterOPNULL 1024

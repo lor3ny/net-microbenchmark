@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
         float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
         float bandwidth =  buffer_gib * (size-1);
         bandwidth = bandwidth / max_time;
-        cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
+        cout << "ALL2ALL Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(send_buffer);

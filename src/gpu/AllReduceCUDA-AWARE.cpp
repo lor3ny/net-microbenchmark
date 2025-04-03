@@ -90,25 +90,7 @@ int main(int argc, char *argv[]) {
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    int gpu_rank = 0;
-    if(rank < (size/2)){
-      if(rank%2 == 0){
-        gpu_rank = 0;
-      } else {
-        gpu_rank = 1;
-      }
-    } else {
-      if(rank%2 == 0){
-        gpu_rank = 2;
-      } else {
-        gpu_rank = 3 ;
-      }
-    }
-
-    if(size == 4){
-      gpu_rank = rank;
-    }
-
+    int gpu_rank = rank%4;
     CUDA_CHECK(cudaSetDevice(gpu_rank));
 
     if(size_count == 512 && strcmp(size_type, "B") == 0){

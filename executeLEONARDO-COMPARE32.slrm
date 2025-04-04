@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --output=log_eth/%j.out
 #SBATCH --error=log_eth/%j.err
-#SBATCH --nodes=16
+#SBATCH --nodes=32
 #SBATCH --ntasks-per-node=4 
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=4
@@ -24,7 +24,7 @@ export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 
 #export UCX_IB_REG_METHODS=direct
 
-echo "MPI-RING 16 NODES"
+echo "MPI-RING 32 NODES"
 
 #srun ./select_nic_ucx ./build/allreduce_cudaaware 512 B
 

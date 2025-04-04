@@ -298,61 +298,6 @@ inline int log_2(int value) {
   return sizeof(int)*8 - 1 - __builtin_clz(value);
 }
 
-/*
-static inline uint32_t reverse(uint32_t x){
-  x = ((x >> 1) & 0x55555555u) | ((x & 0x55555555u) << 1);
-  x = ((x >> 2) & 0x33333333u) | ((x & 0x33333333u) << 2);
-  x = ((x >> 4) & 0x0f0f0f0fu) | ((x & 0x0f0f0f0fu) << 4);
-  x = ((x >> 8) & 0x00ff00ffu) | ((x & 0x00ff00ffu) << 8);
-  x = ((x >> 16) & 0xffffu) | ((x & 0xffffu) << 16);
-  return x;
-}
-
-static uint32_t binary_to_negabinary(int32_t bin) {
-  assert(bin <= 0x55555555);
-  const uint32_t mask = 0xAAAAAAAA;
-  return (mask + bin) ^ mask;
-}
-
-static inline int in_range(int x, uint32_t nbits){
-  return x >= smallest_negabinary[nbits] && x <= largest_negabinary[nbits];
-}
-
-static inline uint32_t get_rank_negabinary_representation(uint32_t num_ranks, uint32_t rank){
-  binary_to_negabinary(rank);
-  uint32_t nba = UINT32_MAX, nbb = UINT32_MAX;
-  size_t num_bits = log_2(num_ranks);
-  if(rank % 2){
-      if(in_range(rank, num_bits)){
-          nba = binary_to_negabinary(rank);
-      }
-      if(in_range(rank - num_ranks, num_bits)){
-          nbb = binary_to_negabinary(rank - num_ranks);
-      }
-  }else{
-      if(in_range(-rank, num_bits)){
-          nba = binary_to_negabinary(-rank);
-      }
-      if(in_range(-rank + num_ranks, num_bits)){
-          nbb = binary_to_negabinary(-rank + num_ranks);
-      }
-  }
-
-  assert(nba != UINT32_MAX || nbb != UINT32_MAX);
-
-  if(nba == UINT32_MAX && nbb != UINT32_MAX){
-      return nbb;
-  }else if(nba != UINT32_MAX && nbb == UINT32_MAX){
-      return nba;
-  }else{ // Check MSB
-      if(nba & (80000000 >> (32 - num_bits))){
-          return nba;
-      }else{
-          return nbb;
-      }
-  }
-}
-*/
 
 static void remap_ranks(int* coord_root, size_t step, uint port, swing_algo_family_t algo, swing_distance_type_t dist_type, SwingCoordConverter* scc, uint* next_rank, const uint* parent, uint* remapped_ranks, uint* remapped_ranks_max, swing_step_info_t* step_info){
   remapped_ranks_max[scc->getIdFromCoord(coord_root)] = *next_rank;
@@ -579,7 +524,7 @@ __global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *ino
 }
 
 int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
-  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree){
+  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char* tmp_buf){
 
 
   int size, rank, dest, steps, step, datatype_size;
@@ -588,7 +533,7 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   uint32_t vrank, vdest;
 
   char *tmp_send = NULL, *tmp_recv = NULL;
-  char *tmp_buf_raw = NULL, *tmp_buf;
+  //char *tmp_buf_raw = NULL, *tmp_buf;
   size_t buf_size;
   MPI_Request send_req, recv_req;
   //MPI_Request send_req_pipe[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
@@ -606,9 +551,9 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   steps = log_2(size);
 
   segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
-  buf_size = segment_size * datatype_size;
-  CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
-  tmp_buf = tmp_buf_raw;
+  //buf_size = segment_size * datatype_size;
+  //CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+  //tmp_buf = tmp_buf_raw;
   
   r_index = (int*) malloc(sizeof(*r_index) * steps);
   s_index = (int*) malloc(sizeof(*s_index) * steps);
@@ -641,15 +586,21 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
     }
 
     // SEGMENTARE
+    if(s_count[step] < segment_size) {
+      segment_size = s_count[step];
+      num_segments = 1;
+    } else {
+      num_segments = (s_count[step] + segment_size - 1) / segment_size;
+    }
     num_segments = (s_count[step] + segment_size - 1) / segment_size;
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
 
     //req = 0;
-    MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0]/*&send_req_pipe[req]*/);
+    MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0] /*&send_req_pipe[req]*/);
 
     for (size_t seg = 0; seg < num_segments; ++seg) {
       offset = seg * segment_size;
-      current_segment_size = min(segment_size, s_count[step] - offset);
+      current_segment_size = segment_size; //min(segment_size, s_count[step] - offset);
 
       //req = req ^ 0x1;
 
@@ -672,7 +623,6 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
     }
 
-
     MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);
     cudaDeviceSynchronize();
 
@@ -683,7 +633,7 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
     }
   }
   
-  
+  */
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
 
@@ -692,14 +642,17 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
     tmp_send = (char *)recv_buf + r_index[step] * datatype_size;  
     tmp_recv = (char *)recv_buf + s_index[step] * datatype_size;  
 
+    if(step < steps - 1) {
+      MPI_Wait(&send_req, MPI_STATUS_IGNORE);
+    }
     MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &send_req);
     MPI_Irecv(tmp_recv, s_count[step], dtype, dest, 0, comm, &recv_req);
     MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
-    MPI_Wait(&send_req, MPI_STATUS_IGNORE);
+    //MPI_Wait(&send_req, MPI_STATUS_IGNORE);
   }
   
 
-  CUDA_CHECK(cudaFree(tmp_buf_raw));
+  //CUDA_CHECK(cudaFree(tmp_buf_raw));
   free(r_index);
   free(s_index);
   free(r_count);
@@ -1054,6 +1007,15 @@ int main(int argc, char *argv[]) {
     int *d_test_recv_buffer;
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
 
+    char* tmp_buf_raw = NULL;
+    int datatype_size;
+    MPI_Type_size(MPI_INT, &datatype_size);
+    size_t  segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
+    size_t buf_size = segment_size * datatype_size;
+    CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+    char* tmp_buf = tmp_buf_raw;
+  
+
     SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
     uint* peers = (uint*) malloc(sizeof(uint)*scc->size); 
     swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
@@ -1064,13 +1026,13 @@ int main(int argc, char *argv[]) {
     }
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));
 
-    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree);
+    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree, tmp_buf);
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int), rank);
+    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int),rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);
@@ -1091,7 +1053,7 @@ int main(int argc, char *argv[]) {
         //double remove_time = 0.0;
         double start_time, end_time;
         start_time = MPI_Wtime();
-        allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree);
+        allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree, tmp_buf);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
@@ -1126,6 +1088,7 @@ int main(int argc, char *argv[]) {
     free(h_test_recv_buffer);
     free(peers);
 
+    CUDA_CHECK(cudaFree(tmp_buf_raw));
     CUDA_CHECK(cudaFree(d_recv_buffer));
     CUDA_CHECK(cudaFree(d_send_buffer));
     CUDA_CHECK(cudaFree(d_test_recv_buffer));

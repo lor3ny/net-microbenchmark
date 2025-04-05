@@ -570,13 +570,13 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   vrank = tree->remapped_ranks[rank];
 
   double start = MPI_Wtime();
-  printf("Rank %d starting reduce-scatter\n", rank);  fflush(stdout);
+  //printf("Rank %d starting reduce-scatter\n", rank);  fflush(stdout);
   // Reduce-Scatter phase
   for(step = 0; step < steps; step++) {
 
     dest = peers[step];
 
-    printf("Rank %d step %d, dest %d (num steps %d)\n", rank, step, dest, steps); fflush(stdout);
+    //printf("Rank %d step %d, dest %d (num steps %d)\n", rank, step, dest, steps); fflush(stdout);
 
     vdest = tree->remapped_ranks[dest];
 
@@ -606,7 +606,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
 
     //req = 0;
-    printf("Rank %d sending %zu bytes to %d\n", rank, segment_size * datatype_size, dest); fflush(stdout);
+    //printf("Rank %d sending %zu bytes to %d\n", rank, segment_size * datatype_size, dest); fflush(stdout);
     MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0] /*&send_req_pipe[req]*/);
 
     for (size_t seg = 0; seg < num_segments; ++seg) {
@@ -623,7 +623,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       //}
       
 
-      printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest); fflush(stdout);
+      //printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest); fflush(stdout);
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
       if(step == 0){
         tmp_recv = (char *) recv_buf + offset * datatype_size;
@@ -638,7 +638,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       if(seg+1 < num_segments) {
         offset_send = (seg+1) * segment_size;
         current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-        printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest); fflush(stdout);
+        //printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest); fflush(stdout);
         MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
       }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
@@ -646,7 +646,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);
     cudaDeviceSynchronize();
-    printf("Rank %d finished step %d\n", rank, step); fflush(stdout);
+    //printf("Rank %d finished step %d\n", rank, step); fflush(stdout);
 
     if(step + 1 < steps) {
       r_index[step + 1] = r_index[step];
@@ -656,7 +656,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   }
   //total_time += MPI_Wtime() - start;
   
-  printf("Rank %d finished reduce-scatter\n", rank);  fflush(stdout);
+  //printf("Rank %d finished reduce-scatter\n", rank);  fflush(stdout);
   MPI_Request* send_reqs_ag = (MPI_Request*) malloc(sizeof(MPI_Request) * steps); 
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
@@ -666,8 +666,8 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
     tmp_send = (char *)recv_buf + r_index[step] * datatype_size;  
     tmp_recv = (char *)recv_buf + s_index[step] * datatype_size;
 
-    printf("Rank %d AG sending %zu bytes to %d\n", rank, r_count[step] * datatype_size, dest); fflush(stdout);
-    printf("Rank %d AG receiving %zu bytes from %d\n", rank, s_count[step] * datatype_size, dest); fflush(stdout);
+    //printf("Rank %d AG sending %zu bytes to %d\n", rank, r_count[step] * datatype_size, dest); fflush(stdout);
+    //printf("Rank %d AG receiving %zu bytes from %d\n", rank, s_count[step] * datatype_size, dest); fflush(stdout);
     
     MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &(send_reqs_ag[step]));
     MPI_Recv(tmp_recv, s_count[step], dtype, dest, 0, comm, MPI_STATUS_IGNORE);
@@ -1031,7 +1031,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(inter_comm, &inter_size);
     MPI_Comm_rank(intra_comm, &intra_rank);
     MPI_Comm_rank(inter_comm, &inter_rank);
-    printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
+    //printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
 
 
     //SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 

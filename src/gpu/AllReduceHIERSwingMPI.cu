@@ -1027,6 +1027,8 @@ int main(int argc, char *argv[]) {
     int intra_size, inter_size;
     MPI_Comm_size(intra_comm, &intra_size);
     MPI_Comm_size(inter_comm, &inter_size);
+    MPI_Comm_rank(intra_comm, &intra_rank);
+    MPI_Comm_rank(inter_comm, &inter_rank);
     printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
 
 

@@ -949,6 +949,33 @@ int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
 }
 
 
+int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                    MPI_Comm comm){
+    // Do an allgather where each rank isends and irecvs from everyone else
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    int datatype_size;
+    MPI_Type_size(sendtype, &datatype_size);
+    int *sendbuf_int = (int*) sendbuf;
+    int *recvbuf_int = (int*) recvbuf;
+    int next_send_req = 0, next_recv_req = 0;
+    MPI_Request* send_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
+    MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
+    for (int i = 0; i < size; i++) {
+        if (i != rank) {
+            MPI_Isend((char*) recvbuf + rank * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &send_req[next_send_req]);
+            ++next_send_req;
+            MPI_Irecv((char*) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
+            ++next_recv_req;
+        }
+    }
+    MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);
+    MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
+    free(send_req);
+    free(recv_req);
+    return MPI_SUCCESS;
+}
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -1061,7 +1088,8 @@ int main(int argc, char *argv[]) {
     // d_recv_buffer is large enough, I can use part of it as recvbuf
     //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
-    MPI_Allgather(MPI_IN_PLACE, intra_recv_counts[intra_rank], MPI_INT, d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+    //MPI_Allgather(MPI_IN_PLACE, intra_recv_counts[intra_rank], MPI_INT, d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+    intra_allgather(d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
 
     // Check allreduce
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -1097,7 +1125,8 @@ int main(int argc, char *argv[]) {
         // d_recv_buffer is large enough, I can use part of it as recvbuf
         //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator
-        MPI_Allgather(MPI_IN_PLACE, intra_recv_counts[intra_rank], MPI_INT, d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+        //MPI_Allgather(MPI_IN_PLACE, intra_recv_counts[intra_rank], MPI_INT, d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+        intra_allgather(d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

@@ -969,27 +969,21 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     MPI_Request* send_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
     MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
     int next_send_req = 0, next_recv_req = 0;
-    const int* tris_ptr[4];
-    int next_tris_ptr = 0;
     for (int i = 0; i < size; i++) {
         if (i != rank) {
             MPI_Isend((char*) sendbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &send_req[next_send_req]);
             ++next_send_req;
             MPI_Irecv((char*) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
             ++next_recv_req;
-            tris_ptr[next_tris_ptr] = (const int*) ((char*) recvbuf + i * recvcount * datatype_size);            
             //printf("Rank %d setting tris_ptr[%d] to offset %d\n", rank, next_tris_ptr, i*recvcount * datatype_size);
-            ++next_tris_ptr;
         }
     } 
     MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);    
-    tris_ptr[3] = (const int*) (((char*) sendbuf) + rank * recvcount * datatype_size);
     //printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
-    //reduce_tris_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
-    reduce_tris_kernel<<<512, 512>>>((const int*) ((char*) recvbuf + 0 * recvcount * datatype_size), 
-                                     (const int*) ((char*) recvbuf + 1 * recvcount * datatype_size),
-                                     (const int*) ((char*) recvbuf + 2 * recvcount * datatype_size),
-                                     (const int*) ((char*) recvbuf + 3 * recvcount * datatype_size),
+    reduce_tris_kernel<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
+                                     (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
+                                     (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
+                                     (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
                                      (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
     MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     free(send_req);

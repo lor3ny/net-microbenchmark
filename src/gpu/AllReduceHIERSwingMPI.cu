@@ -967,7 +967,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     int datatype_size;
     MPI_Type_size(recvtype, &datatype_size);
     int next_send_req = 0, next_recv_req = 0;
-    const int* tris_ptrs[3];
+    const int* tris_ptr[3];
     int next_tris_ptr = 0;
     for (int i = 0; i < size; i++) {
         if (i != rank) {
@@ -978,9 +978,8 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
         }
     }
     tris_ptr[3] = (char*) sendbuf + rank * recvcount * datatype_size;
-    reduce_sum_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
+    reduce_tris_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
     cudaDeviceSynchronize();
-    MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     return MPI_SUCCESS;
 }
 

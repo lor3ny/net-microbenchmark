@@ -978,7 +978,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
         }
     }    
     tris_ptr[3] = (const int*) (((char*) sendbuf) + rank * recvcount * datatype_size);
-    printf("Rank %d setting tris_ptr[%d] to offset %d\n", rank, next_tris_ptr, rank*recvcount * datatype_size);
+    printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
     reduce_tris_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
     cudaDeviceSynchronize();
     return MPI_SUCCESS;

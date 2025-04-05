@@ -973,14 +973,14 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
             MPI_Sendrecv((char*) sendbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, 
                          (char*) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, MPI_STATUS_IGNORE);
             tris_ptr[next_tris_ptr] = (const int*) ((char*) recvbuf + i * recvcount * datatype_size);            
-            printf("Rank %d setting tris_ptr[%d] to offset %d\n", rank, next_tris_ptr, i*recvcount * datatype_size);
+            //printf("Rank %d setting tris_ptr[%d] to offset %d\n", rank, next_tris_ptr, i*recvcount * datatype_size);
             ++next_tris_ptr;
         }
     }    
     tris_ptr[3] = (const int*) (((char*) sendbuf) + rank * recvcount * datatype_size);
-    printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
-    reduce_tris_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
-    cudaDeviceSynchronize();
+    //printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
+    //reduce_tris_kernel<<<512, 512>>>(tris_ptr[0], tris_ptr[1], tris_ptr[2], tris_ptr[3], (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
+    //cudaDeviceSynchronize();
     return MPI_SUCCESS;
 }
 
@@ -1153,7 +1153,7 @@ int main(int argc, char *argv[]) {
         //MPI_Reduce_scatter_block(d_send_buffer, redscat_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, intra_comm);                
         intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         // d_recv_buffer is large enough, I can use part of it as recvbuf
-        //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator
         intra_allgather(d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
         end_time = MPI_Wtime();

@@ -1035,8 +1035,8 @@ int main(int argc, char *argv[]) {
 
     // Hier allreduce
     // Do first a reduce-scatter on the intra communicator
-    char* redscat_out_buf = (char*) d_recv_buffer + ((intra_rank + 1) % GPUS_PER_NODE)*intra_recv_counts*sizeof(int);
-    char* allreduce_out_buf = (char*) d_recv_buffer + intra_rank*intra_recv_counts*sizeof(int);
+    int* redscat_out_buf   = d_recv_buffer + ((intra_rank + 1) % GPUS_PER_NODE)*intra_recv_counts;
+    int* allreduce_out_buf = d_recv_buffer + intra_rank*intra_recv_counts;
 
     // This is it
     MPI_Reduce_scatter(d_send_buffer, redscat_out_buf, intra_recv_counts, MPI_INT, MPI_SUM, intra_comm);

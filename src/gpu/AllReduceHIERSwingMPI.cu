@@ -619,6 +619,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       //}
       
 
+      printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest);
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
       if(step == 0){
         tmp_recv = (char *) recv_buf + offset * datatype_size;
@@ -633,6 +634,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       if(seg+1 < num_segments) {
         offset_send = (seg+1) * segment_size;
         current_segment_size_send = min(segment_size, s_count[step] - offset_send);
+        printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest);
         MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
       }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
@@ -640,6 +642,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);
     cudaDeviceSynchronize();
+    printf("Rank %d finished step %d\n", rank, step);
 
     if(step + 1 < steps) {
       r_index[step + 1] = r_index[step];
@@ -649,7 +652,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   }
   //total_time += MPI_Wtime() - start;
   
-
+  printf("Rank %d finished reduce-scatter\n", rank);
   MPI_Request* send_reqs_ag = (MPI_Request*) malloc(sizeof(MPI_Request) * steps); 
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
@@ -1009,7 +1012,7 @@ int main(int argc, char *argv[]) {
   
 
     //SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
-    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{size/4}, 1); 
+    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{size / GPUS_PER_NODE}, 1); 
     uint* peers = (uint*) malloc(sizeof(uint)*scc->size); 
     swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
     compute_peers(rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);
@@ -1022,14 +1025,13 @@ int main(int argc, char *argv[]) {
     MPI_Comm intra_comm, inter_comm;
     MPI_Comm_split(MPI_COMM_WORLD, (rank / GPUS_PER_NODE), rank, &intra_comm);
     MPI_Comm_split(MPI_COMM_WORLD, (rank % GPUS_PER_NODE), rank, &inter_comm);
-    int intra_rank = rank % GPUS_PER_NODE;
-    int inter_rank = rank / GPUS_PER_NODE;
+    int intra_rank, inter_rank;
     int intra_size, inter_size;
     MPI_Comm_size(intra_comm, &intra_size);
     MPI_Comm_size(inter_comm, &inter_size);
     MPI_Comm_rank(intra_comm, &intra_rank);
     MPI_Comm_rank(inter_comm, &inter_rank);
-    printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
+    //printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
 
 
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));

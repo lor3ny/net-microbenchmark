@@ -948,7 +948,7 @@ int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
   return incorrect;
 }
 
-
+/*
 __global__ void reduce_tris_kernel(const int *in_a, const int *in_b, const int *in_c, const int *in_d, int *out, size_t count) {
   int global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
   int thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
@@ -958,6 +958,7 @@ __global__ void reduce_tris_kernel(const int *in_a, const int *in_b, const int *
     out[idx] = in_a[idx] + in_b[idx] + in_c[idx] + in_d[idx]; 
   }
 }
+*/
 
 __global__ void sum4arrays(const int* a, const int* b, const int* c, const int* d, int* out, size_t count) {
   size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -994,7 +995,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
                                      (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
                                      (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
                                      (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
-                                     (int*) (char*) recvbuf + rank * recvcount * datatype_size, recvcount);
+                                     (int*) (char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size, recvcount);
     MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     free(send_req);
     free(recv_req);        
@@ -1127,14 +1128,11 @@ int main(int argc, char *argv[]) {
     char* allreduce_out_buf = (char*) d_recv_buffer + intra_rank*(msg_count / GPUS_PER_NODE)*sizeof(int);
 
     // This is it
-    //MPI_Reduce_scatter_block(d_send_buffer, redscat_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, intra_comm);        
-    intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
-    //MPI_Allreduce(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, intra_comm);
-    
+    intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
-    //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
-    //intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
+    intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
 
     // Check allreduce
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);

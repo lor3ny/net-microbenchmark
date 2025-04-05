@@ -956,6 +956,7 @@ __global__ void reduce_tris_kernel(const int *in_a, const int *in_b, const int *
   for(i = 0; global_thread_idx + i*thread_count < count; i++){
     idx = global_thread_idx + i*thread_count; 
     out[idx] = in_a[idx] + in_b[idx] + in_c[idx] + in_d[idx]; 
+    return;
   }
 }
 

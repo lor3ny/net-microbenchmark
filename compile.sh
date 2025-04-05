@@ -11,3 +11,4 @@ mkdir build
 mpicxx src/gpu/AllReduceMESHSwingMPI.cu -O3 -o build/allreduce_swing_mesh_mpi -lcudart
 #nvcc src/gpu/AllReduceMESHSwingNCCL.cu -O3 -o build/allreduce_swing_mesh_nccl -lnccl -lcudart -lcuda -lmpi
 mpicxx src/gpu/AllReduceCUDA-AWARE.cpp -O3 -o build/allreduce_cudaaware -lcudart
+mpicxx src/gpu/AllGatherCUDA-AWARE.cpp -O3 -o build/allgather_cudaaware -lcudart

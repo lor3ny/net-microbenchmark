@@ -9,7 +9,7 @@
 #SBATCH --time=00:10:00 
 #SBATCH --partition=boost_usr_prod 
 #SBATCH --account=IscrB_SWING
-#SBATCH --exclude=lrdn[1291-3456]
+#SBATCH --exclude=lrdn[1291-3456, 1255]
 #SBATCH --qos=boost_qos_dbg
 #SBATCH --exclusive
 
@@ -24,7 +24,7 @@ export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 
 #export UCX_IB_REG_METHODS=direct
 
-echo "MPI-RING 1 NODES"
+echo "MPI-RING 2 NODES"
 
 #srun ./select_nic_ucx ./build/allreduce_cudaaware 512 B
 
@@ -51,3 +51,8 @@ srun ./select_nic_ucx ./build/allreduce_cudaaware 128 MiB
 
 srun ./select_nic_ucx ./build/allreduce_cudaaware 256 MiB
 srun ./select_nic_ucx ./build/allreduce_cudaaware 512 MiB
+
+srun ./select_nic_ucx ./build/allgather_cudaaware 128 MiB
+
+srun ./select_nic_ucx ./build/allgather_cudaaware 256 MiB
+srun ./select_nic_ucx ./build/allgather_cudaaware 512 MiB

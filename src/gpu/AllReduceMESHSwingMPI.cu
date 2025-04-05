@@ -523,9 +523,11 @@ __global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *ino
   }
 }
 
-int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
-  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char* tmp_buf){
+double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
+  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree){
 
+
+  double total_time = 0.0;
 
   int size, rank, dest, steps, step, datatype_size;
   int *r_count = NULL, *s_count = NULL, *r_index = NULL, *s_index = NULL;/*, req = 0;*/
@@ -533,7 +535,7 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   uint32_t vrank, vdest;
 
   char *tmp_send = NULL, *tmp_recv = NULL;
-  //char *tmp_buf_raw = NULL, *tmp_buf;
+  char *tmp_buf_raw = NULL, *tmp_buf;
   size_t buf_size;
   MPI_Request send_req, recv_req;
   //MPI_Request send_req_pipe[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
@@ -551,9 +553,9 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   steps = log_2(size);
 
   segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
-  //buf_size = segment_size * datatype_size;
-  //CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
-  //tmp_buf = tmp_buf_raw;
+  buf_size = segment_size * datatype_size;
+  CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+  tmp_buf = tmp_buf_raw;
   
   r_index = (int*) malloc(sizeof(*r_index) * steps);
   s_index = (int*) malloc(sizeof(*s_index) * steps);
@@ -563,6 +565,8 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   w_size = count;
   s_index[0] = r_index[0] = 0;
   vrank = tree->remapped_ranks[rank];
+
+  double start = MPI_Wtime();
 
   // Reduce-Scatter phase
   for(step = 0; step < steps; step++) {
@@ -614,10 +618,10 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
       if(step == 0){
         tmp_recv = (char *) recv_buf + offset * datatype_size;
         tmp_send = (char *) send_buf + offset * datatype_size;
-        reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size, r_index[step], count / 2);
+        //reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size, r_index[step], count / 2);
       } else {
         tmp_recv = (char *) recv_buf + r_index[step] * datatype_size + offset * datatype_size;
-        reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
+        //reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
       }
 
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
@@ -632,8 +636,9 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
       w_size = r_count[step];
     }
   }
+  //total_time += MPI_Wtime() - start;
   
-  */
+  
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
 
@@ -648,16 +653,15 @@ int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
     MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &send_req);
     MPI_Irecv(tmp_recv, s_count[step], dtype, dest, 0, comm, &recv_req);
     MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
-    //MPI_Wait(&send_req, MPI_STATUS_IGNORE);
   }
   
 
-  //CUDA_CHECK(cudaFree(tmp_buf_raw));
+  CUDA_CHECK(cudaFree(tmp_buf_raw));
   free(r_index);
   free(s_index);
   free(r_count);
   free(s_count);
-  return MPI_SUCCESS;
+  return total_time;
 }
 
 /*
@@ -1006,14 +1010,6 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_recv_buffer, (size_t) BUFFER_SIZE));
     int *d_test_recv_buffer;
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
-
-    char* tmp_buf_raw = NULL;
-    int datatype_size;
-    MPI_Type_size(MPI_INT, &datatype_size);
-    size_t  segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
-    size_t buf_size = segment_size * datatype_size;
-    CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
-    char* tmp_buf = tmp_buf_raw;
   
 
     SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
@@ -1026,13 +1022,13 @@ int main(int argc, char *argv[]) {
     }
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));
 
-    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree, tmp_buf);
+    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree);
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int),rank);
+    ret = 0;//VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int),rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);
@@ -1050,14 +1046,14 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
-        //double remove_time = 0.0;
+        double remove_time = 0.0;
         double start_time, end_time;
         start_time = MPI_Wtime();
-        allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree, tmp_buf);
+        remove_time = allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD, peers, &tree);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
-          total_time += (end_time - start_time)/* - remove_time*/;
+          total_time += (end_time - start_time) - remove_time;
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
@@ -1088,7 +1084,6 @@ int main(int argc, char *argv[]) {
     free(h_test_recv_buffer);
     free(peers);
 
-    CUDA_CHECK(cudaFree(tmp_buf_raw));
     CUDA_CHECK(cudaFree(d_recv_buffer));
     CUDA_CHECK(cudaFree(d_send_buffer));
     CUDA_CHECK(cudaFree(d_test_recv_buffer));

@@ -1016,14 +1016,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_recv_buffer, (size_t) BUFFER_SIZE));
     int *d_test_recv_buffer;
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
-  
-
-    //SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
-    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{size / GPUS_PER_NODE}, 1); 
-    uint* peers = (uint*) malloc(sizeof(uint)*scc->size); 
-    swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
-    compute_peers(rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);
-    
+      
     for (int i = 0; i < msg_count; i++) {
         h_send_buffer[i] = rand() % 1000; 
     }
@@ -1039,6 +1032,13 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(intra_comm, &intra_rank);
     MPI_Comm_rank(inter_comm, &inter_rank);
     printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
+
+
+    //SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1} 
+    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{size / GPUS_PER_NODE}, 1); 
+    uint* peers = (uint*) malloc(sizeof(uint)*scc->size); 
+    swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
+    compute_peers(inter_rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);
 
 
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));

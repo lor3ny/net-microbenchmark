@@ -956,9 +956,7 @@ int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
     int datatype_size;
-    MPI_Type_size(sendtype, &datatype_size);
-    int *sendbuf_int = (int*) sendbuf;
-    int *recvbuf_int = (int*) recvbuf;
+    MPI_Type_size(recvtype, &datatype_size);
     int next_send_req = 0, next_recv_req = 0;
     MPI_Request* send_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
     MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);

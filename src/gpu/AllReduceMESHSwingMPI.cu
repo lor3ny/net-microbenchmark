@@ -554,7 +554,10 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
   segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
   buf_size = segment_size * datatype_size;
+
+  //double malloc_cost = MPI_Wtime();
   CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+  //printf("Malloc cost %f\n", MPI_Wtime() - malloc_cost);
   tmp_buf = tmp_buf_raw;
   
   r_index = (int*) malloc(sizeof(*r_index) * steps);
@@ -608,22 +611,30 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
       //req = req ^ 0x1;
 
-      if(seg+1 < num_segments) {
-        offset_send = (seg+1) * segment_size;
-        current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-        MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
-      }
+      
+      //if(seg+1 < num_segments) {
+       // offset_send = (seg+1) * segment_size;
+      //  current_segment_size_send = min(segment_size, s_count[step] - offset_send);
+      //  MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
+      //}
+      
 
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
       if(step == 0){
         tmp_recv = (char *) recv_buf + offset * datatype_size;
         tmp_send = (char *) send_buf + offset * datatype_size;
-        //reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size, r_index[step], count / 2);
+        reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size, r_index[step], count / 2);
       } else {
         tmp_recv = (char *) recv_buf + r_index[step] * datatype_size + offset * datatype_size;
-        //reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
+        reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
       }
 
+
+      if(seg+1 < num_segments) {
+        offset_send = (seg+1) * segment_size;
+        current_segment_size_send = min(segment_size, s_count[step] - offset_send);
+        MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
+      }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
     }
 
@@ -638,29 +649,30 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   }
   //total_time += MPI_Wtime() - start;
   
-  
+
+  MPI_Request* send_reqs_ag = (MPI_Request*) malloc(sizeof(MPI_Request) * steps); 
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {
 
     dest = peers[step];
 
     tmp_send = (char *)recv_buf + r_index[step] * datatype_size;  
-    tmp_recv = (char *)recv_buf + s_index[step] * datatype_size;  
+    tmp_recv = (char *)recv_buf + s_index[step] * datatype_size;
 
-    if(step < steps - 1) {
-      MPI_Wait(&send_req, MPI_STATUS_IGNORE);
-    }
-    MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &send_req);
-    MPI_Irecv(tmp_recv, s_count[step], dtype, dest, 0, comm, &recv_req);
-    MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
+    MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &(send_reqs_ag[step]));
+    MPI_Recv(tmp_recv, s_count[step], dtype, dest, 0, comm, MPI_STATUS_IGNORE);
   }
-  
+ 
 
   CUDA_CHECK(cudaFree(tmp_buf_raw));
   free(r_index);
   free(s_index);
   free(r_count);
   free(s_count);
+
+  MPI_Waitall(steps, send_reqs_ag, MPI_STATUSES_IGNORE);
+  free(send_reqs_ag);
+
   return total_time;
 }
 
@@ -915,7 +927,7 @@ int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
   for(int i = 0; i<dim; ++i){
     try {
       if(buf_a[i] != buf_b[i]){
-        cout << rank << " : "<< i <<" - cuda: "<< buf_a[i] << " test: " << buf_b[i] << endl;
+        //cout << rank << " : "<< i <<" - cuda: "<< buf_a[i] << " test: " << buf_b[i] << endl;
         incorrect = -1;
       }
     } catch (const invalid_argument& e) {
@@ -1028,7 +1040,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = 0;//VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int),rank);
+    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE/sizeof(int),rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);

@@ -966,8 +966,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     MPI_Comm_size(comm, &size);
     int datatype_size;
     MPI_Type_size(recvtype, &datatype_size);
-    int next_send_req = 0, next_recv_req = 0;
-    const int* tris_ptr[3];
+    const int* tris_ptr[4];
     int next_tris_ptr = 0;
     for (int i = 0; i < size; i++) {
         if (i != rank) {

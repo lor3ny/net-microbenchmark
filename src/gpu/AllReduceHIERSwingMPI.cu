@@ -1024,6 +1024,10 @@ int main(int argc, char *argv[]) {
     MPI_Comm_split(MPI_COMM_WORLD, (size % GPUS_PER_NODE), rank, &inter_comm);
     int intra_rank = rank % GPUS_PER_NODE;
     int inter_rank = rank / GPUS_PER_NODE;
+    int intra_size, inter_size;
+    MPI_Comm_size(intra_comm, &intra_size);
+    MPI_Comm_size(inter_comm, &inter_size);
+    printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size);
 
 
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));

@@ -1103,15 +1103,10 @@ int main(int argc, char *argv[]) {
 
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));
     
-    int* intra_recv_counts = (int*) malloc(sizeof(int) * GPUS_PER_NODE);
-    for(size_t i = 0; i < GPUS_PER_NODE; i++){
-      intra_recv_counts[i] = msg_count / GPUS_PER_NODE;
-    }
-
-    // Hier allreduce
+     // Hier allreduce
     // Do first a reduce-scatter on the intra communicator
-    char* redscat_out_buf   = (char*) d_recv_buffer + ((intra_rank + 1) % GPUS_PER_NODE)*intra_recv_counts[intra_rank]*sizeof(int);
-    char* allreduce_out_buf = (char*) d_recv_buffer + intra_rank*intra_recv_counts[intra_rank]*sizeof(int);
+    char* redscat_out_buf   = (char*) d_recv_buffer + ((intra_rank + 1) % GPUS_PER_NODE)*(msg_count / GPUS_PER_NODE)*sizeof(int);
+    char* allreduce_out_buf = (char*) d_recv_buffer + intra_rank*(msg_count / GPUS_PER_NODE)*sizeof(int);
 
     // This is it
     //MPI_Reduce_scatter_block(d_send_buffer, redscat_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, intra_comm);        
@@ -1119,9 +1114,9 @@ int main(int argc, char *argv[]) {
     //MPI_Allreduce(d_send_buffer, d_recv_buffer, msg_count, MPI_INT, MPI_SUM, intra_comm);
     
     // d_recv_buffer is large enough, I can use part of it as recvbuf
-    //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+    //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
-    //intra_allgather(d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+    //intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
 
     // Check allreduce
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -1153,9 +1148,9 @@ int main(int argc, char *argv[]) {
         //MPI_Reduce_scatter_block(d_send_buffer, redscat_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, intra_comm);                
         intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         // d_recv_buffer is large enough, I can use part of it as recvbuf
-        //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, intra_recv_counts[intra_rank], MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator
-        intra_allgather(d_recv_buffer, intra_recv_counts[intra_rank], MPI_INT, intra_comm);
+        intra_allgather(d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
@@ -1193,7 +1188,6 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaFree(d_recv_buffer));
     CUDA_CHECK(cudaFree(d_send_buffer));
     CUDA_CHECK(cudaFree(d_test_recv_buffer));
-    free(intra_recv_counts);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

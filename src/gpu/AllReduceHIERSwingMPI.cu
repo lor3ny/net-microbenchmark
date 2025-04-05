@@ -1020,8 +1020,8 @@ int main(int argc, char *argv[]) {
 
     // Create the inter and intra communicator
     MPI_Comm intra_comm, inter_comm;
-    MPI_Comm_split(MPI_COMM_WORLD, (size / GPUS_PER_NODE), rank, &intra_comm);
-    MPI_Comm_split(MPI_COMM_WORLD, (size % GPUS_PER_NODE), rank, &inter_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, (rank / GPUS_PER_NODE), rank, &intra_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, (rank % GPUS_PER_NODE), rank, &inter_comm);
     int intra_rank = rank % GPUS_PER_NODE;
     int inter_rank = rank / GPUS_PER_NODE;
     int intra_size, inter_size;

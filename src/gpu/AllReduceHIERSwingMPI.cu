@@ -570,7 +570,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   vrank = tree->remapped_ranks[rank];
 
   double start = MPI_Wtime();
-
+  printf("Rank %d starting reduce-scatter\n", rank);  fflush(stdout);
   // Reduce-Scatter phase
   for(step = 0; step < steps; step++) {
 
@@ -619,7 +619,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       //}
       
 
-      printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest);
+      printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest); fflush(stdout);
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
       if(step == 0){
         tmp_recv = (char *) recv_buf + offset * datatype_size;
@@ -634,7 +634,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       if(seg+1 < num_segments) {
         offset_send = (seg+1) * segment_size;
         current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-        printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest);
+        printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest); fflush(stdout);
         MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
       }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
@@ -642,7 +642,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);
     cudaDeviceSynchronize();
-    printf("Rank %d finished step %d\n", rank, step);
+    printf("Rank %d finished step %d\n", rank, step); fflush(stdout);
 
     if(step + 1 < steps) {
       r_index[step + 1] = r_index[step];
@@ -652,7 +652,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   }
   //total_time += MPI_Wtime() - start;
   
-  printf("Rank %d finished reduce-scatter\n", rank);
+  printf("Rank %d finished reduce-scatter\n", rank);  fflush(stdout);
   MPI_Request* send_reqs_ag = (MPI_Request*) malloc(sizeof(MPI_Request) * steps); 
   // Allgather phase
   for(step = steps - 1; step >= 0; step--) {

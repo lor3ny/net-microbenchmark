@@ -959,6 +959,16 @@ __global__ void reduce_tris_kernel(const int *in_a, const int *in_b, const int *
   }
 }
 
+__global__ void sum4arrays(const int* a, const int* b, const int* c, const int* d, int* out, size_t count) {
+  size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t stride = blockDim.x * gridDim.x;
+
+  for (size_t i = idx; i < count; i += stride) {
+      out[i] = a[i] + b[i] + c[i] + d[i];
+  }
+}
+
+
 int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
     // Do a reduce-scatter where each rank isends and irecvs from everyone else
     int rank, size;
@@ -980,7 +990,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     } 
     MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);    
     //printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
-    reduce_tris_kernel<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
+    sum4arrays<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
                                      (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
                                      (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
                                      (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),

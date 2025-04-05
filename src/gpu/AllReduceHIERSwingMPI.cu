@@ -603,6 +603,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
 
     //req = 0;
+    printf("Rank %d sending %zu bytes to %d\n", rank, segment_size * datatype_size, dest); fflush(stdout);
     MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0] /*&send_req_pipe[req]*/);
 
     for (size_t seg = 0; seg < num_segments; ++seg) {

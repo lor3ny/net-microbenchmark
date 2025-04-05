@@ -575,6 +575,9 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   for(step = 0; step < steps; step++) {
 
     dest = peers[step];
+
+    printf("Rank %d step %d, dest %d (num steps %d)\n", rank, step, dest, steps); fflush(stdout);
+
     vdest = tree->remapped_ranks[dest];
 
     if(vrank < vdest) {
@@ -665,6 +668,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     printf("Rank %d AG sending %zu bytes to %d\n", rank, r_count[step] * datatype_size, dest); fflush(stdout);
     printf("Rank %d AG receiving %zu bytes from %d\n", rank, s_count[step] * datatype_size, dest); fflush(stdout);
+    
     MPI_Isend(tmp_send, r_count[step], dtype, dest, 0, comm, &(send_reqs_ag[step]));
     MPI_Recv(tmp_recv, s_count[step], dtype, dest, 0, comm, MPI_STATUS_IGNORE);
   }

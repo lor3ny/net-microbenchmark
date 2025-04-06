@@ -628,8 +628,13 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
       if(seg + 1 < num_segments) {
         offset_send = (seg + 1) * segment_size;
-        current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-        MPI_Isend(tmp_send + offset_send * datatype_size, segment_size, dtype, dest, 0, comm, &send_req_pipe[seg+1]);
+        //current_segment_size_send = min(segment_size, s_count[step] - offset_send);
+        if(seg + 1 == num_segments - 1) {
+          current_segment_size_send = s_count[step] - offset_send;
+        }else{
+          current_segment_size_send = segment_size;
+        }
+        MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]);
       }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
     }

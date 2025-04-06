@@ -741,26 +741,11 @@ int main(int argc, char *argv[]) {
         NCCL_CHECK(ncclGetUniqueId(&id));
     MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
     
-    int gpu_rank = 0;
-    if(rank < 2 * (size/4)){
-      if(rank%2 == 0){
-        gpu_rank = 0;
-      } else {
-        gpu_rank = 1;
-      }
-    } else {
-      if(rank%2 == 0){
-        gpu_rank = 2;
-      } else {
-        gpu_rank = 3 ;
-      }
-    }
-
-    if(size == 4){
-      gpu_rank = rank;
-    }
+    #define GPUS_PER_NODE 4    
+    int gpu_rank = rank % GPUS_PER_NODE;
 
     CUDA_CHECK(cudaSetDevice(gpu_rank));
+
 
     if(size_count == 512 && strcmp(size_type, "B") == 0){
       cout << " {" << rank << " : "<< processor_name << " - " << gpu_rank << "}" << endl;

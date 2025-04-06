@@ -1163,7 +1163,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_recv_buffer, (size_t) BUFFER_SIZE));
     int *d_test_recv_buffer;
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
-      
+    srand(time(NULL)*rank);      
     for (int i = 0; i < msg_count; i++) {
         h_send_buffer[i] = rand()*rank % 2; 
     }

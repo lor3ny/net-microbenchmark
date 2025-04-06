@@ -1164,8 +1164,9 @@ int main(int argc, char *argv[]) {
     int *d_test_recv_buffer;
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
     srand(time(NULL)*rank);      
+    int rv = rand()*rank % 10;
     for (size_t i = 0; i < msg_count; i++) {
-        h_send_buffer[i] = rand()*rank % 10; 
+        h_send_buffer[i] = rv; // rand()*rank % 10; 
     }
 
     // Create the inter and intra communicator

@@ -666,7 +666,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
 
 double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
-  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree){
+  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char *tmp_buf_raw){
 
 
   double total_time = 0.0;
@@ -677,7 +677,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   uint32_t vrank, vdest;
 
   char *tmp_send = NULL, *tmp_recv = NULL;
-  char *tmp_buf_raw = NULL, *tmp_buf;
+  char *tmp_buf;
   size_t buf_size;
   MPI_Request send_req, recv_req;
   //MPI_Request send_req_pipe[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
@@ -698,7 +698,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   buf_size = segment_size * datatype_size;
 
   //double malloc_cost = MPI_Wtime();
-  CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+  //CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
   //printf("Malloc cost %f\n", MPI_Wtime() - malloc_cost);
   tmp_buf = tmp_buf_raw;
   
@@ -804,7 +804,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   }
  
 
-  CUDA_CHECK(cudaFree(tmp_buf_raw));
+  //CUDA_CHECK(cudaFree(tmp_buf_raw));
   free(r_index);
   free(s_index);
   free(r_count);
@@ -1327,6 +1327,7 @@ int main(int argc, char *argv[]) {
     
      // Hier allreduce
     // Do first a reduce-scatter on the intra communicator
+    char* tmp_buf           = ((char*) d_recv_buffer) + ((intra_rank + 2) % GPUS_PER_NODE)*(msg_count / GPUS_PER_NODE)*sizeof(int);
     char* redscat_out_buf   = ((char*) d_recv_buffer) + ((intra_rank + 1) % GPUS_PER_NODE)*(msg_count / GPUS_PER_NODE)*sizeof(int);
     char* allreduce_out_buf = ((char*) d_recv_buffer) + intra_rank                        *(msg_count / GPUS_PER_NODE)*sizeof(int);
 
@@ -1334,7 +1335,7 @@ int main(int argc, char *argv[]) {
     //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
     intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
-    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf);
     // Now I can do an allgather on the intra communicator
     intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
 
@@ -1370,7 +1371,7 @@ int main(int argc, char *argv[]) {
         //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
         // d_recv_buffer is large enough, I can use part of it as recvbuf
-        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf);
         // Now I can do an allgather on the intra communicator
         intra_allgather(d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         end_time = MPI_Wtime();

@@ -739,7 +739,9 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     num_segments = ceil(s_count[step] / (double) segment_size);
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
-
+    if(segment_size > s_count[step]){
+        segment_size = s_count[step];
+    }
     MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0]);
 
     for (size_t seg = 0; seg < num_segments; ++seg) {

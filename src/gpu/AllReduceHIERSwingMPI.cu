@@ -1140,7 +1140,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = 0; //VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE / sizeof(int),rank);
+    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE / sizeof(int),rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);

@@ -14,8 +14,6 @@ using namespace std;
 #define MiB1 1048576
 #define GiB1 1073741824
 #define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
-
 
 #define CUDA_CHECK(cmd) do {                        \
   cudaError_t e = cmd;                              \
@@ -88,6 +86,11 @@ int main(int argc, char *argv[]) {
         cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
+
+    int BENCHMARK_ITERATIONS = 100;
+    if(argc >= 4){
+      BENCHMARK_ITERATIONS = atoi(argv[3]);
+    }    
     MPI_Barrier(MPI_COMM_WORLD);
     
     int gpu_rank = rank%4;
@@ -135,7 +138,8 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
 
-
+    double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
@@ -144,6 +148,7 @@ int main(int argc, char *argv[]) {
         double end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
+            samples[i-WARM_UP] = (end_time - start_time)*1e9;
             total_time += end_time - start_time;
         }
 
@@ -153,6 +158,7 @@ int main(int argc, char *argv[]) {
 
     double max_time;
     MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
 
@@ -164,6 +170,11 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0){
+      cout << "highest" << endl;
+      for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
+        cout << samples_all[i] << endl;
+      }
+
       float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
       float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
       bandwidth = bandwidth / max_time;

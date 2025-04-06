@@ -1018,7 +1018,7 @@ int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
         if (i != rank) {
             MPI_Isend(((char*) recvbuf) + rank * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &send_req[next_send_req]);
             ++next_send_req;
-            MPI_Irecv(((char*)) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
+            MPI_Irecv(((char*) recvbuf) + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
             ++next_recv_req;
         }
     }

@@ -605,9 +605,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
     num_segments = ceil(s_count[step] / (double)segment_size);
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
 
-    //req = 0;
-    //printf("Rank %d sending %zu bytes to %d\n", rank, segment_size * datatype_size, dest); fflush(stdout);
-    MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0] /*&send_req_pipe[req]*/);
+    MPI_Isend(tmp_send + 0, segment_size, dtype, dest, 0, comm, &send_req_pipe[0]);
 
     for (size_t seg = 0; seg < num_segments; ++seg) {
       offset = seg * segment_size;
@@ -615,16 +613,6 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       if(seg == num_segments - 1) {
         current_segment_size = s_count[step] - offset;
       }
-
-      //req = req ^ 0x1;
-
-      
-      //if(seg+1 < num_segments) {
-       // offset_send = (seg+1) * segment_size;
-      //  current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-      //  MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
-      //}
-      
 
       //printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest); fflush(stdout);
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
@@ -638,11 +626,10 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       }
 
 
-      if(seg+1 < num_segments) {
-        offset_send = (seg+1) * segment_size;
+      if(seg + 1 < num_segments) {
+        offset_send = (seg + 1) * segment_size;
         current_segment_size_send = min(segment_size, s_count[step] - offset_send);
-        //printf("Rank %d sending %zu bytes to %d\n", rank, current_segment_size_send * datatype_size, dest); fflush(stdout);
-        MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]/*&send_req_pipe[req]*/);
+        MPI_Isend(tmp_send + offset_send * datatype_size, segment_size, dtype, dest, 0, comm, &send_req_pipe[seg+1]);
       }
       //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
     }

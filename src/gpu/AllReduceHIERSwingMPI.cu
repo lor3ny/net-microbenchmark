@@ -1130,9 +1130,9 @@ int main(int argc, char *argv[]) {
     // This is it
     intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
-    //allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
+    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
-    //intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
+    intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
 
     // Check allreduce
     MPI_Allreduce(d_send_buffer, d_test_recv_buffer, msg_count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);

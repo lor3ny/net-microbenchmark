@@ -937,7 +937,7 @@ int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
   for(int i = 0; i<dim; ++i){
     try {
       if(buf_a[i] != buf_b[i]){
-        //cout << rank << " : "<< i <<" - cuda: "<< buf_a[i] << " test: " << buf_b[i] << endl;
+        cout << rank << " : "<< i <<" - swing: "<< buf_a[i] << " test: " << buf_b[i] << endl;
         incorrect = -1;
       }
     } catch (const invalid_argument& e) {
@@ -1097,7 +1097,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
       
     for (int i = 0; i < msg_count; i++) {
-        h_send_buffer[i] = rank; //rand() % 1000; 
+        h_send_buffer[i] = rank; // rand() % 1000; 
     }
 
     // Create the inter and intra communicator
@@ -1140,7 +1140,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
   
-    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE / sizeof(int),rank);
+    ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE / sizeof(int), rank);
     if(ret==-1){
       cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
       free(h_send_buffer);

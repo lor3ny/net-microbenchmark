@@ -970,7 +970,7 @@ __global__ void sum4arrays(const int* a, const int* b, const int* c, const int* 
   }
 }
 
-int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
+int intra_reducescatter_block(void *sendbuf, void *recvbuf, size_t recvcount, MPI_Datatype recvtype, MPI_Comm comm){
     // Do a reduce-scatter where each rank isends and irecvs from everyone else
     int rank, size;
     MPI_Comm_rank(comm, &rank);
@@ -1003,7 +1003,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     return MPI_SUCCESS;
 }
 
-int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, int num_segments) {
+int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, size_t recvcount, MPI_Datatype recvtype, MPI_Comm comm, int num_segments) {
   int rank, size;
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
@@ -1063,7 +1063,7 @@ int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, int recvco
   return MPI_SUCCESS;
 }
 
-int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
+int intra_allgather(void *recvbuf, size_t recvcount, MPI_Datatype recvtype,
                     MPI_Comm comm){
     // Do an allgather where each rank isends and irecvs from everyone else
     int rank, size;

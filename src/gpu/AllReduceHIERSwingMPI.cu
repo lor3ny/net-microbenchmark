@@ -492,21 +492,21 @@ void compute_peers(uint rank, int port, swing_algo_family_t algo, SwingCoordConv
 
 __global__ void reduce_sum_kernel(const int *in, int *inout, size_t count) {
 
-  int global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  int thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
-  int i, idx;
+  size_t global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
+  size_t i, idx;
   for(i = 0; global_thread_idx + i*thread_count < count; i++){
     idx = global_thread_idx + i*thread_count; 
     inout[idx] += in[idx]; 
   }
 }
 
-__global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *inout, int rcount, int rindex, int half_count) {
+__global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *inout, int rcount, int rindex, size_t half_count) {
 
   
-  int global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  int thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
-  int i, idx;
+  size_t global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
+  size_t i, idx;
 
   if(rindex == 0){
     for(i = 0; global_thread_idx + i*thread_count < rcount; i++){

@@ -1131,10 +1131,13 @@ int main(int argc, char *argv[]) {
         cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
+    
+    /*
     int hier_segment_size = 1;
     if(argc >= 4){
       hier_segment_size = atoi(argv[3]);
     }
+    */
 
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -1161,7 +1164,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
       
     for (int i = 0; i < msg_count; i++) {
-        h_send_buffer[i] = rand() % 1000; 
+        h_send_buffer[i] = rand()*rank % 100; 
     }
 
     // Create the inter and intra communicator

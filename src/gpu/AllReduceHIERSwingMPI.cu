@@ -552,7 +552,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   // Does not support non-power-of-two or negative sizes
   steps = log_2(size);
 
-  segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
+  segment_size = 1024 * 1024 * 1024 / datatype_size; //64 KiB
   buf_size = segment_size * datatype_size;
 
   //double malloc_cost = MPI_Wtime();
@@ -602,7 +602,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
     } else {
       num_segments = (s_count[step] + segment_size - 1) / segment_size;
     }
-    //num_segments = (s_count[step] + segment_size - 1) / segment_size;
+    num_segments = (s_count[step] + segment_size - 1) / segment_size;
     send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments); //TEST
 
     //req = 0;

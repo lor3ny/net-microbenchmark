@@ -1030,7 +1030,7 @@ int main(int argc, char *argv[]) {
     compute_peers(rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);
     
     for (int i = 0; i < msg_count; i++) {
-        h_send_buffer[i] = rank; 
+        h_send_buffer[i] = rand()*rank % 100; //rank; 
     }
     CUDA_CHECK(cudaMemcpy(d_send_buffer, h_send_buffer, (size_t) BUFFER_SIZE, cudaMemcpyHostToDevice));
 

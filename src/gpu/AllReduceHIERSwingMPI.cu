@@ -756,15 +756,14 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
       tmp_recv = (char *) recv_buf + r_index[step] * datatype_size + offset * datatype_size;
       
       if(step == 0){        
-        tmp_send = (char *) send_buf + r_index[step] * datatype_size + offset * datatype_size;
-        reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size);
+        char* tmp_send_0 = (char *) send_buf + r_index[step] * datatype_size + offset * datatype_size;
+        reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send_0, (int*)tmp_recv, current_segment_size);
       } else {        
         reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
       }
 
       if(seg + 1 < num_segments) {
         offset_send = (seg + 1) * segment_size;
-        //current_segment_size_send = min(segment_size, s_count[step] - offset_send);
         if(seg + 1 == num_segments - 1) {
           current_segment_size_send = s_count[step] - offset_send;
         }else{
@@ -772,7 +771,6 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
         }
         MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg+1]);
       }
-      //MPI_Wait(&send_req_pipe[req ^ 0x1], MPI_STATUS_IGNORE); TEST
     }
 
     MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);

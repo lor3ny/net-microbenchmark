@@ -1,16 +1,16 @@
 #!/bin/bash
 #SBATCH --output=log_eth/%j.out
 #SBATCH --error=log_eth/%j.err
-#SBATCH --nodes=64
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4 
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=4
 #SBATCH --gres=gpu:4 
-#SBATCH --time=01:00:00 
+#SBATCH --time=00:10:00 
 #SBATCH --partition=boost_usr_prod 
 #SBATCH --account=IscrB_SWING
 #SBATCH --exclude=lrdn[1291-3456]
-#--qos=boost_qos_dbg
+#SBATCH --qos=boost_qos_dbg
 #SBATCH --exclusive
 
 export UCX_PROTO_ENABLE=y
@@ -33,12 +33,22 @@ do
     fi
     mkdir -p data/${SLURM_JOB_NUM_NODES}/${BENCH}/
     
-    srun ./select_nic_ucx ./build/${BENCH} 256 B 10000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/256B.csv
-    srun ./select_nic_ucx ./build/${BENCH} 2 KiB 1000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/2KiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 16 KiB 1000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/16KiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 128 KiB 1000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/128KiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 1 MiB 1000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/1MiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 8 MiB 1000 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/8MiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 64 MiB 100 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/64MiB.csv
-    srun ./select_nic_ucx ./build/${BENCH} 512 MiB 100 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/512MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 256 B 10000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/256B.csv
+    srun ./select_nic_ucx ./build/${BENCH} 2 KiB 1000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/2KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 16 KiB 1000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/16KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 128 KiB 1000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/128KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 1 MiB 1000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/1MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 8 MiB 1000 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/8MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 64 MiB 100 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/64MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 512 MiB 100 1 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/512MiB.csv
+
+    srun ./select_nic_ucx ./build/${BENCH} 256 B 10000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/256B.csv
+    srun ./select_nic_ucx ./build/${BENCH} 2 KiB 1000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/2KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 16 KiB 1000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/16KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 128 KiB 1000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/128KiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 1 MiB 1000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/1MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 8 MiB 1000 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/8MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 64 MiB 100 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/64MiB.csv
+    srun ./select_nic_ucx ./build/${BENCH} 512 MiB 100 2 > data/${SLURM_JOB_NUM_NODES}/${BENCH}/512MiB.csv
+
 done

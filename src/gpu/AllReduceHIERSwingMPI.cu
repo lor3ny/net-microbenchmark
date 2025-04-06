@@ -666,7 +666,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
 
 double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
-  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char *tmp_buf_raw){
+  MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char *tmp_buf_raw, size_t segment_size){
 
 
   double total_time = 0.0;
@@ -685,7 +685,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
   size_t offset_send, current_segment_size_send;
   size_t offset, current_segment_size;
-  size_t num_segments, segment_size;
+  size_t num_segments;
 
   MPI_Comm_size(comm, &size);
   MPI_Comm_rank(comm, &rank);
@@ -694,7 +694,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   // Does not support non-power-of-two or negative sizes
   steps = log_2(size);
 
-  segment_size = 1024 * 1024 * 16 / datatype_size; //64 KiB
+  segment_size = segment_size / datatype_size; //64 KiB
   buf_size = segment_size * datatype_size;
 
   //double malloc_cost = MPI_Wtime();
@@ -1133,7 +1133,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, size_t recvcount, MP
     return MPI_SUCCESS;
 }
 
-int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, size_t recvcount, MPI_Datatype recvtype, MPI_Comm comm, int num_segments) {
+int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, size_t recvcount, MPI_Datatype recvtype, MPI_Comm comm, uint64_t segment_size) {
   int rank, size;
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
@@ -1141,8 +1141,12 @@ int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, size_t rec
   int datatype_size;
   MPI_Type_size(recvtype, &datatype_size);
 
-  int segment_size = (recvcount + num_segments - 1) / num_segments;  // round up
+
+  int num_segments = ceil(recvcount / (double) segment_size);
+  //int num_segments = 1;
+  //int segment_size = (recvcount + num_segments - 1) / num_segments;  // round up
   int last_segment_size = recvcount - segment_size * (num_segments - 1);
+
 
   MPI_Request* send_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size * num_segments);
   MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size * num_segments);
@@ -1273,6 +1277,10 @@ int main(int argc, char *argv[]) {
       hier_segment_size = atoi(argv[4]);
     }
 
+    int inter_segment_size = 1;
+    if(argc >= 6){
+      inter_segment_size = atoi(argv[5]);
+    }
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1335,7 +1343,7 @@ int main(int argc, char *argv[]) {
     //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
     intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
-    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf);
+    allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf, inter_segment_size);
     // Now I can do an allgather on the intra communicator
     intra_allgather(d_recv_buffer, (msg_count / GPUS_PER_NODE), MPI_INT, intra_comm);
 
@@ -1347,7 +1355,7 @@ int main(int argc, char *argv[]) {
   
     ret = VerifyCollective(h_recv_buffer, h_test_recv_buffer, BUFFER_SIZE / sizeof(int), rank);
     if(ret==-1){
-      cerr << "THE ANALYZED COLLECTIVE IS NOT WORKING! :(" << endl;
+      cerr << "THE ANALYZED COLLECTIVE WITH " << BUFFER_SIZE << " IS NOT WORKING! :(" << endl;
       free(h_send_buffer);
       free(h_recv_buffer);
       free(h_test_recv_buffer);
@@ -1371,7 +1379,7 @@ int main(int argc, char *argv[]) {
         //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
         // d_recv_buffer is large enough, I can use part of it as recvbuf
-        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf);
+        allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree, tmp_buf, inter_segment_size);
         // Now I can do an allgather on the intra communicator
         intra_allgather(d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
         end_time = MPI_Wtime();
@@ -1407,7 +1415,7 @@ int main(int argc, char *argv[]) {
       float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
       float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
       bandwidth = bandwidth / max_time;
-      cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
+      cout << "Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib, " << size_count << size_type << " Segment sizes [INTRA-INTER]: " << hier_segment_size << "-" << inter_segment_size << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
     }
 
     free(h_send_buffer);

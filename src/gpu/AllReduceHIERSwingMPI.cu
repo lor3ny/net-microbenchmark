@@ -989,12 +989,12 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
             //printf("Rank %d setting tris_ptr[%d] to offset %d\n", rank, next_tris_ptr, i*recvcount * datatype_size);
         }
     } 
-    MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);    
+    MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);
     //printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
-    sum4arrays<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
-                             (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
-                             (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
-                             (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
+    sum4arrays<<<512, 512>>>((const int*) (((char*) rank == 0 ? sendbuf : recvbuf) + 0 * recvcount * datatype_size), 
+                             (const int*) (((char*) rank == 1 ? sendbuf : recvbuf) + 1 * recvcount * datatype_size),
+                             (const int*) (((char*) rank == 2 ? sendbuf : recvbuf) + 2 * recvcount * datatype_size),
+                             (const int*) (((char*) rank == 3 ? sendbuf : recvbuf) + 3 * recvcount * datatype_size),
                              (int*) ((char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size), recvcount);
     MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     free(send_req);

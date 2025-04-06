@@ -501,14 +501,14 @@ __global__ void reduce_sum_kernel(const int *in, int *inout, size_t count) {
   }
 }
 
-__global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *out, size_t rcount) { 
+__global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *out, size_t count) { 
   size_t global_thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
   size_t thread_count = gridDim.x * gridDim.y * gridDim.z * blockDim.x * blockDim.y * blockDim.z;
   size_t i, idx;
 
   for(i = 0; global_thread_idx + i*thread_count < count; i++){
     idx = global_thread_idx + i*thread_count; 
-    inout[idx] = inA[idx] + inB[idx]; 
+    out[idx] = inA[idx] + inB[idx]; 
   }
 }
 

@@ -1042,10 +1042,10 @@ int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, int recvco
       MPI_Waitall(size - 1, &recv_req[seg * (size - 1)], MPI_STATUSES_IGNORE);
 
       // Pointers for this segment
-      const int* a = (const int*)((rank == 0 ? sendbuf : recvbuf) + (0 * recvcount + seg * segment_size) * datatype_size);
-      const int* b = (const int*)((rank == 1 ? sendbuf : recvbuf) + (1 * recvcount + seg * segment_size) * datatype_size);
-      const int* c = (const int*)((rank == 2 ? sendbuf : recvbuf) + (2 * recvcount + seg * segment_size) * datatype_size);
-      const int* d = (const int*)((rank == 3 ? sendbuf : recvbuf) + (3 * recvcount + seg * segment_size) * datatype_size);
+      const int* a = (const int*)((rank == 0 ? (char*) sendbuf : (char*) recvbuf) + (0 * recvcount + seg * segment_size) * datatype_size);
+      const int* b = (const int*)((rank == 1 ? (char*) sendbuf : (char*) recvbuf) + (1 * recvcount + seg * segment_size) * datatype_size);
+      const int* c = (const int*)((rank == 2 ? (char*) sendbuf : (char*) recvbuf) + (2 * recvcount + seg * segment_size) * datatype_size);
+      const int* d = (const int*)((rank == 3 ? (char*) sendbuf : (char*) recvbuf) + (3 * recvcount + seg * segment_size) * datatype_size);
 
       int* out = (int*)((char*)recvbuf + (((rank + 1) % 4) * recvcount + seg * segment_size) * datatype_size);
 
@@ -1061,7 +1061,6 @@ int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, int recvco
   free(recv_req);
   return MPI_SUCCESS;
 }
-
 
 int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
                     MPI_Comm comm){
@@ -1132,6 +1131,11 @@ int main(int argc, char *argv[]) {
         cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
+    int hier_segment_size = 1;
+    if(argc >= 4){
+      hier_segment_size = atoi(argv[3]);
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
     
 #define GPUS_PER_NODE 4    
@@ -1157,7 +1161,7 @@ int main(int argc, char *argv[]) {
     CUDA_CHECK(cudaMalloc((void**)&d_test_recv_buffer, (size_t) BUFFER_SIZE));
       
     for (int i = 0; i < msg_count; i++) {
-        h_send_buffer[i] = rank; // rand() % 1000; 
+        h_send_buffer[i] = rand() % 1000; 
     }
 
     // Create the inter and intra communicator
@@ -1189,7 +1193,7 @@ int main(int argc, char *argv[]) {
 
     // This is it
     //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
-    intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, 4);    
+    intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
     allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
@@ -1223,7 +1227,7 @@ int main(int argc, char *argv[]) {
         start_time = MPI_Wtime();
         // This is it
         //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
-        intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, 4);    
+        intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
         // d_recv_buffer is large enough, I can use part of it as recvbuf
         allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator

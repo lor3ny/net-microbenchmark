@@ -525,7 +525,85 @@ __global__ void reduce_sum_kernel_step0(const int *inA, const int *inB, int *ino
 
 double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree){
+// Assumes: dtype == MPI_INT
+assert(dtype == MPI_INT);
 
+segment_size = 1024 * 1024 * 16 / datatype_size; // 64 KiB
+buf_size = segment_size * datatype_size;
+CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));
+tmp_buf = tmp_buf_raw;
+
+r_index = (size_t*) malloc(sizeof(*r_index) * steps);
+s_index = (size_t*) malloc(sizeof(*s_index) * steps);
+r_count = (size_t*) malloc(sizeof(*r_count) * steps);
+s_count = (size_t*) malloc(sizeof(*s_count) * steps);
+
+w_size = count;
+s_index[0] = r_index[0] = 0;
+vrank = tree->remapped_ranks[rank];
+
+for(step = 0; step < steps; step++) {
+
+  dest = peers[step];
+  vdest = tree->remapped_ranks[dest];
+
+  if(vrank < vdest) {
+    r_count[step] = w_size / 2;
+    s_count[step] = w_size - r_count[step];
+    s_index[step] = r_index[step] + r_count[step];
+  } else {
+    s_count[step] = w_size / 2;
+    r_count[step] = w_size - s_count[step];
+    r_index[step] = s_index[step] + s_count[step];
+  }
+
+  const char *src_buf = (step == 0) ? (const char*)send_buf : (const char*)recv_buf;
+  tmp_send = (char*)(src_buf + s_index[step] * datatype_size);
+
+  size_t seg_size = min(segment_size, s_count[step]);
+  size_t num_segments = (s_count[step] + seg_size - 1) / seg_size;
+  send_req_pipe = (MPI_Request*) malloc(sizeof(MPI_Request) * num_segments);
+
+  for (size_t seg = 0; seg < num_segments; ++seg) {
+    offset = seg * seg_size;
+    current_segment_size = min(seg_size, s_count[step] - offset);
+
+    // Post send of next segment if exists
+    if (seg == 0) {
+      MPI_Isend(tmp_send, current_segment_size, dtype, dest, 0, comm, &send_req_pipe[0]);
+    } else {
+      offset_send = seg * seg_size;
+      current_segment_size_send = min(seg_size, s_count[step] - offset_send);
+      MPI_Isend(tmp_send + offset_send * datatype_size, current_segment_size_send, dtype, dest, 0, comm, &send_req_pipe[seg]);
+    }
+
+    // Receive the segment
+    MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
+
+    if(step == 0){
+      tmp_recv = (char *) recv_buf + offset * datatype_size;
+      tmp_send = (char *) send_buf + offset * datatype_size;
+      reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size, r_index[step], count / 2);
+    } else {
+      tmp_recv = (char *) recv_buf + (r_index[step] + offset) * datatype_size;
+      reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);
+    }
+
+    cudaDeviceSynchronize(); // sync per segment for now (can optimize)
+  }
+
+  MPI_Waitall(num_segments, send_req_pipe, MPI_STATUSES_IGNORE);
+  free(send_req_pipe);
+
+  // Prepare next step
+  if(step + 1 < steps) {
+    r_index[step + 1] = r_index[step];
+    s_index[step + 1] = r_index[step];
+    w_size = r_count[step];
+  }
+}
+
+#if 0
 
   double total_time = 0.0;
 
@@ -611,7 +689,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
     for (size_t seg = 0; seg < num_segments; ++seg) {
       offset = seg * segment_size;
-      current_segment_size = min(segment_size, s_count[step] - offset);
+      current_segment_size = segment_size; //min(segment_size, s_count[step] - offset);
 
       //req = req ^ 0x1;
 
@@ -684,6 +762,7 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   free(send_reqs_ag);
 
   return total_time;
+#endif
 }
 
 /*

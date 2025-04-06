@@ -1002,6 +1002,67 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     return MPI_SUCCESS;
 }
 
+int intra_reducescatter_block_segmented(void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, int num_segments) {
+  int rank, size;
+  MPI_Comm_rank(comm, &rank);
+  MPI_Comm_size(comm, &size);
+
+  int datatype_size;
+  MPI_Type_size(recvtype, &datatype_size);
+
+  int segment_size = (recvcount + num_segments - 1) / num_segments;  // round up
+  int last_segment_size = recvcount - segment_size * (num_segments - 1);
+
+  MPI_Request* send_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size * num_segments);
+  MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size * num_segments);
+  int next_send_req = 0, next_recv_req = 0;
+
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
+
+  for (int seg = 0; seg < num_segments; ++seg) {
+      int curr_seg_size = (seg == num_segments - 1) ? last_segment_size : segment_size;
+      size_t seg_bytes = curr_seg_size * datatype_size;
+
+      for (int peer = 0; peer < size; ++peer) {
+          if (peer != rank) {
+              // offsets in bytes
+              size_t offset = (peer * recvcount + seg * segment_size) * datatype_size;
+
+              MPI_Isend((char*)sendbuf + offset, curr_seg_size, recvtype, peer, seg, comm, &send_req[next_send_req++]);
+              MPI_Irecv((char*)recvbuf + offset, curr_seg_size, recvtype, peer, seg, comm, &recv_req[next_recv_req++]);
+          }
+      }
+  }
+
+  // Wait for each segment to arrive from all peers, then reduce
+  for (int seg = 0; seg < num_segments; ++seg) {
+      int curr_seg_size = (seg == num_segments - 1) ? last_segment_size : segment_size;
+
+      MPI_Waitall(size - 1, &recv_req[seg * (size - 1)], MPI_STATUSES_IGNORE);
+
+      // Pointers for this segment
+      const int* a = (const int*)((rank == 0 ? sendbuf : recvbuf) + (0 * recvcount + seg * segment_size) * datatype_size);
+      const int* b = (const int*)((rank == 1 ? sendbuf : recvbuf) + (1 * recvcount + seg * segment_size) * datatype_size);
+      const int* c = (const int*)((rank == 2 ? sendbuf : recvbuf) + (2 * recvcount + seg * segment_size) * datatype_size);
+      const int* d = (const int*)((rank == 3 ? sendbuf : recvbuf) + (3 * recvcount + seg * segment_size) * datatype_size);
+
+      int* out = (int*)((char*)recvbuf + (((rank + 1) % 4) * recvcount + seg * segment_size) * datatype_size);
+
+      // Kernel on stream for overlap
+      sum4arrays<<<512, 512, 0, stream>>>(a, b, c, d, out, curr_seg_size);
+  }
+
+  cudaStreamSynchronize(stream);
+  cudaStreamDestroy(stream);
+  MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
+
+  free(send_req);
+  free(recv_req);
+  return MPI_SUCCESS;
+}
+
+
 int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
                     MPI_Comm comm){
     // Do an allgather where each rank isends and irecvs from everyone else
@@ -1127,7 +1188,8 @@ int main(int argc, char *argv[]) {
     char* allreduce_out_buf = ((char*) d_recv_buffer) + intra_rank                        *(msg_count / GPUS_PER_NODE)*sizeof(int);
 
     // This is it
-    intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
+    //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
+    intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, 4);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
     allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
@@ -1160,8 +1222,8 @@ int main(int argc, char *argv[]) {
         double start_time, end_time;
         start_time = MPI_Wtime();
         // This is it
-        //MPI_Reduce_scatter_block(d_send_buffer, redscat_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, intra_comm);                
-        intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
+        //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
+        intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, 4);    
         // d_recv_buffer is large enough, I can use part of it as recvbuf
         allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator

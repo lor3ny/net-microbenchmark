@@ -793,8 +793,8 @@ int main(int argc, char *argv[]) {
     //CUDACHECK(cudaStreamCreateWithFlags(streams+i, cudaStreamNonBlocking))
 
 
-    allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream, peers, &tree);
-    ncclAllReduce(d_send_buffer, d_test_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream);
+    //allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream, peers, &tree);
+    //ncclAllReduce(d_send_buffer, d_test_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_test_recv_buffer, d_test_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
@@ -820,7 +820,7 @@ int main(int argc, char *argv[]) {
 
         double time_to_remove = 0.0;
         double start_time = MPI_Wtime();
-        ncclAllReduce(d_send_buffer, d_test_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream);
+        ncclAllReduce(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, NULL);
         //time_to_remove = allreduce_swing_bdw_mesh(d_send_buffer, d_recv_buffer, (size_t) msg_count, ncclInt, ncclSum, comm, stream, peers, &tree);
         time_to_remove = 0;
         double end_time = MPI_Wtime();

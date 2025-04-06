@@ -1016,9 +1016,9 @@ int intra_allgather(void *recvbuf, int recvcount, MPI_Datatype recvtype,
     MPI_Request* recv_req = (MPI_Request*) malloc(sizeof(MPI_Request) * size);
     for (int i = 0; i < size; i++) {
         if (i != rank) {
-            MPI_Isend((char*) recvbuf + rank * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &send_req[next_send_req]);
+            MPI_Isend(((char*) recvbuf) + rank * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &send_req[next_send_req]);
             ++next_send_req;
-            MPI_Irecv((char*) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
+            MPI_Irecv(((char*)) recvbuf + i * recvcount * datatype_size, recvcount, recvtype, i, 0, comm, &recv_req[next_recv_req]);
             ++next_recv_req;
         }
     }
@@ -1124,8 +1124,8 @@ int main(int argc, char *argv[]) {
     
      // Hier allreduce
     // Do first a reduce-scatter on the intra communicator
-    char* redscat_out_buf   = (char*) d_recv_buffer + ((intra_rank + 1) % GPUS_PER_NODE)*(msg_count / GPUS_PER_NODE)*sizeof(int);
-    char* allreduce_out_buf = (char*) d_recv_buffer + intra_rank*(msg_count / GPUS_PER_NODE)*sizeof(int);
+    char* redscat_out_buf   = ((char*) d_recv_buffer) + ((intra_rank + 1) % GPUS_PER_NODE)*(msg_count / GPUS_PER_NODE)*sizeof(int);
+    char* allreduce_out_buf = ((char*) d_recv_buffer) + intra_rank                        *(msg_count / GPUS_PER_NODE)*sizeof(int);
 
     // This is it
     intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    

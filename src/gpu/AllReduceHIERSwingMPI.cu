@@ -991,15 +991,15 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
     } 
     MPI_Waitall(next_recv_req, recv_req, MPI_STATUSES_IGNORE);    
     //printf("Rank %d setting tris_ptr[%d] to offset %d recvcount: %d \n", rank, next_tris_ptr, rank*recvcount * datatype_size, recvcount);
-    //sum4arrays<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
-    //                                 (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
-    //                                 (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
-    //                                 (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
-    //                                 (int*) (char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size, recvcount);
+    sum4arrays<<<512, 512>>>((const int*) (((char*) recvbuf) + 0 * recvcount * datatype_size), 
+                             (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
+                             (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
+                             (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
+                             (int*) (char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size, 1);
     MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     free(send_req);
     free(recv_req);        
-    //cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
     return MPI_SUCCESS;
 }
 

@@ -1,22 +1,23 @@
 #!/bin/bash
 #SBATCH --output=log_eth/%j.out
 #SBATCH --error=log_eth/%j.err
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=4 
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=4
 #SBATCH --gres=gpu:4 
-#SBATCH --time=00:10:00 
+#SBATCH --time=02:00:00 
 #SBATCH --partition=boost_usr_prod 
+#--qos=boost_qos_bprod
 #SBATCH --account=IscrB_SWING
+#SBATCH --dependency=afterany:14912304 
 #SBATCH --exclude=lrdn[1291-3456]
-#SBATCH --qos=boost_qos_dbg
 #SBATCH --exclusive
 
 export UCX_PROTO_ENABLE=y
 export UCX_IB_SL=1
 
-for BENCH in allreduce_swing_hier_mpi #allreduce_cudaaware allreduce_nccl allreduce_swing_hier_mpi
+for BENCH in allreduce_swing_hier_mpi allreduce_cudaaware allreduce_nccl #allreduce_swing_hier_mpi
 do
     module purge
     if [ "$BENCH" == "allreduce_cudaaware" ]

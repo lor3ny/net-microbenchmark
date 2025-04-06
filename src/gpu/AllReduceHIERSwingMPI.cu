@@ -969,7 +969,6 @@ __global__ void sum4arrays(const int* a, const int* b, const int* c, const int* 
   }
 }
 
-
 int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
     // Do a reduce-scatter where each rank isends and irecvs from everyone else
     int rank, size;

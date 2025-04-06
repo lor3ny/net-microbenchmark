@@ -528,6 +528,32 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 // Assumes: dtype == MPI_INT
 assert(dtype == MPI_INT);
 
+double total_time = 0.0;
+
+int size, rank, dest, steps, step, datatype_size;
+size_t *r_count = NULL, *s_count = NULL, *r_index = NULL, *s_index = NULL;/*, req = 0;*/
+size_t w_size;
+uint32_t vrank, vdest;
+
+char *tmp_send = NULL, *tmp_recv = NULL;
+char *tmp_buf_raw = NULL, *tmp_buf;
+size_t buf_size;
+MPI_Request send_req, recv_req;
+//MPI_Request send_req_pipe[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
+MPI_Request *send_req_pipe;
+
+size_t offset_send, current_segment_size_send;
+size_t offset, current_segment_size;
+size_t num_segments, segment_size;
+
+MPI_Comm_size(comm, &size);
+MPI_Comm_rank(comm, &rank);
+MPI_Type_size(dtype, &datatype_size);
+
+// Does not support non-power-of-two or negative sizes
+steps = log_2(size);
+
+
 segment_size = 1024 * 1024 * 16 / datatype_size; // 64 KiB
 buf_size = segment_size * datatype_size;
 CUDA_CHECK(cudaMalloc((void**) &tmp_buf_raw, buf_size));

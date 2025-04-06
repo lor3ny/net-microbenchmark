@@ -1263,12 +1263,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
-    /*
     int hier_segment_size = 1;
     if(argc >= 4){
       hier_segment_size = atoi(argv[3]);
     }
-    */
 
     MPI_Barrier(MPI_COMM_WORLD);
     

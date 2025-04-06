@@ -937,7 +937,7 @@ int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
   for(int i = 0; i<dim; ++i){
     try {
       if(buf_a[i] != buf_b[i]){
-        //cout << rank << " : "<< i <<" - swing: "<< buf_a[i] << " test: " << buf_b[i] << endl;
+        cout << rank << " : "<< i <<" - swing: "<< buf_a[i] << " test: " << buf_b[i] << endl;
         incorrect = -1;
       }
     } catch (const invalid_argument& e) {

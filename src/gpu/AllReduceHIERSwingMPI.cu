@@ -560,10 +560,10 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
   //printf("Malloc cost %f\n", MPI_Wtime() - malloc_cost);
   tmp_buf = tmp_buf_raw;
   
-  r_index = (536870912 *) malloc(sizeof(*r_index) * steps);
-  s_index = (536870912 *) malloc(sizeof(*s_index) * steps);
-  r_count = (536870912 *) malloc(sizeof(*r_count) * steps);
-  s_count = (536870912 *) malloc(sizeof(*s_count) * steps);
+  r_index = (size_t*) malloc(sizeof(*r_index) * steps);
+  s_index = (size_t*) malloc(sizeof(*s_index) * steps);
+  r_count = (size_t*) malloc(sizeof(*r_count) * steps);
+  s_count = (size_t*) malloc(sizeof(*s_count) * steps);
 
   w_size = count;
   s_index[0] = r_index[0] = 0;

@@ -995,7 +995,7 @@ int intra_reducescatter_block(void *sendbuf, void *recvbuf, int recvcount, MPI_D
                              (const int*) (((char*) recvbuf) + 1 * recvcount * datatype_size),
                              (const int*) (((char*) recvbuf) + 2 * recvcount * datatype_size),
                              (const int*) (((char*) recvbuf) + 3 * recvcount * datatype_size),
-                             (int*) (char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size, 1);
+                             (int*) ((char*) recvbuf + ((rank + 1) % 4) * recvcount * datatype_size), recvcount);
     MPI_Waitall(next_send_req, send_req, MPI_STATUSES_IGNORE);
     free(send_req);
     free(recv_req);        

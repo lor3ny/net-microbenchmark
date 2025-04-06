@@ -1326,8 +1326,8 @@ int main(int argc, char *argv[]) {
     char* allreduce_out_buf = ((char*) d_recv_buffer) + intra_rank                        *(msg_count / GPUS_PER_NODE)*sizeof(int);
 
     // This is it
-    intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
-    //intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
+    //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);    
+    intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
     // d_recv_buffer is large enough, I can use part of it as recvbuf
     allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, (msg_count / GPUS_PER_NODE), MPI_INT, MPI_SUM, inter_comm, peers, &tree);
     // Now I can do an allgather on the intra communicator
@@ -1360,8 +1360,8 @@ int main(int argc, char *argv[]) {
         double start_time, end_time;
         start_time = MPI_Wtime();
         // This is it
-        intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
-        //intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
+        //intra_reducescatter_block(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm);
+        intra_reducescatter_block_segmented(d_send_buffer, d_recv_buffer, msg_count / GPUS_PER_NODE, MPI_INT, intra_comm, hier_segment_size);    
         // d_recv_buffer is large enough, I can use part of it as recvbuf
         allreduce_swing_bdw_mesh(redscat_out_buf, allreduce_out_buf, msg_count / GPUS_PER_NODE, MPI_INT, MPI_SUM, inter_comm, peers, &tree);
         // Now I can do an allgather on the intra communicator

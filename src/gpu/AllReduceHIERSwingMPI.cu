@@ -753,10 +753,10 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 
       //printf("Rank %d receiving %zu bytes from %d\n", rank, current_segment_size * datatype_size, dest); fflush(stdout);
       MPI_Recv(tmp_buf, current_segment_size, dtype, dest, 0, comm, MPI_STATUS_IGNORE);
-      tmp_recv = (char *) recv_buf + s_index[step] * datatype_size + offset * datatype_size;
+      tmp_recv = (char *) recv_buf + r_index[step] * datatype_size + offset * datatype_size;
       
       if(step == 0){        
-        tmp_send = (char *) send_buf + s_index[step] * datatype_size + offset * datatype_size;
+        tmp_send = (char *) send_buf + r_index[step] * datatype_size + offset * datatype_size;
         reduce_sum_kernel_step0<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_send, (int*)tmp_recv, current_segment_size);
       } else {        
         reduce_sum_kernel<<<512, 512>>>((const int*)tmp_buf, (int*)tmp_recv, current_segment_size);

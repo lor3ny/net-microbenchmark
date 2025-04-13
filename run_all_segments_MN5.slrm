@@ -1,0 +1,88 @@
+#!/bin/bash
+#SBATCH --output=log_eth/%j.out
+#SBATCH --error=log_eth/%j.err
+#SBATCH --nodes=64
+#SBATCH --ntasks-per-node=4
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=4
+#SBATCH --gres=gpu:4 
+#SBATCH --time=02:00:00  
+#SBATCH --qos=acc_ehpc
+#SBATCH --dependency=afterany:18983063
+#SBATCH --account=ehpc181
+#SBATCH --exclusive
+
+export UCX_PROTO_ENABLE=y
+#export UCX_IB_SL=1
+
+PROCS=256
+
+TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
+
+for BENCH in allreduce_hier_bw_mpi allreduce_hier_lat_mpi #allreduce_nccl #allreduce_cudaaware allreduce_hier_bw_nccl 
+do
+    module purge
+    if [ "$BENCH" == "allreduce_cudaaware" ]
+    then
+	    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0
+    fi
+    if [ "$BENCH" == "allreduce_hier_bw_mpi" ]
+    then
+        module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0
+    fi
+    if [ "$BENCH" == "allreduce_hier_lat_mpi" ]
+    then
+        module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0
+    fi
+    if [ "$BENCH" == "allreduce_nccl" ]
+    then
+	    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+    fi
+    if [ "$BENCH" == "allreduce_hier_bw_nccl" ]
+    then
+	    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+    fi
+    mkdir -p data/${SLURM_JOB_NUM_NODES}/${BENCH}/
+
+    #BUFFER_SIZE BUFFER_MULTIPLIER ITERATIONS INTRA_SEGMENT_SIZE INTER_SEGMENT_SIZE
+    
+    mpirun -n $PROCS ./build/${BENCH} 256 B 10000 256 256 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
+    mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 2048 1024 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
+    mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 16384 1024 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
+    mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 131072 8192 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv 
+    mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 1048576 65536 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
+    mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 8388608 4194304 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
+    mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 67108864 4194304 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
+    mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 134217728 16777216 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+    mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 536870912 16777216 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
+
+done
+
+
+BENCH="allreduce_nccl"
+
+for ALGO in "ring" "tree" "collnet" "collnetchain" "collnetdirect" "nvls" "nvlstree" "pat" 
+do
+    module purge
+    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+    mkdir -p data/${SLURM_JOB_NUM_NODES}/${BENCH}_${ALGO}/
+
+    export NCCL_ALGO=$ALGO
+    
+    export NCCL_BUFFSIZE=256
+    mpirun -n $PROCS ./build/${BENCH} 256 B 10000 64 64 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}_${ALGO}.csv
+    export NCCL_BUFFSIZE=1024
+    mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 2048 1024 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}_${ALGO}.csv
+    mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 16384 1024 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}_${ALGO}.csv 
+    export NCCL_BUFFSIZE=8192
+    mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 131072 8192 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}_${ALGO}.csv 
+    export NCCL_BUFFSIZE=65536
+    mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 1048576 65536 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}_${ALGO}.csv 
+    export NCCL_BUFFSIZE=4194304
+    mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 8388608 4194304 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}_${ALGO}.csv
+    mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 67108864 4194304 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}_${ALGO}.csv
+    export NCCL_BUFFSIZE=16777216
+    mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 134217728 16777216 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_${ALGO}.csv
+    mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 536870912 16777216 > data/marenostrum/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}_${ALGO}.csv
+
+done

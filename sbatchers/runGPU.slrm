@@ -1,0 +1,87 @@
+#!/bin/bash
+#SBATCH --output=log_eth/%j.out
+#SBATCH --error=log_eth/%j.err
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=4  
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=4
+#SBATCH --gres=gpu:4          
+#SBATCH --time=00:10:00  
+#SBATCH --partition=boost_usr_prod   
+#SBATCH --account=IscrB_SWING
+#SBATCH --exclude=lrdn[1291-3456]
+#SBATCH --qos=boost_qos_dbg
+#SBATCH --exclusive
+
+# IMPORTANT: The following exports are required only on some clusters
+# ALWAYS REVIEW THEM BEFORE RUNNING
+
+export UCX_MAX_RNDV_RAILS=4
+if [ -n "${UCX_IB_SL}" ]; then 
+    export UCX_IB_SL=${UCX_IB_SL}
+else
+    export UCX_IB_SL=1
+fi
+export UCX_PROTO_ENABLE=y
+
+export UCX_RCACHE_MAX_SIZE=0
+
+export UCX_IB_REG_METHODS=direct
+
+# EXECUTE SWING ALL REDUCE MESH VERSION
+
+srun -m plane=2 ./build/allreduce_swing_mesh_mpi 16 B
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 512 B
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 1 KiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 4 KiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 8 KiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 32 KiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 64 KiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 128 KiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 256 KiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 512 KiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 1 MiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 2 MiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 8 MiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 16 MiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 64 MiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 128 MiB
+
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 256 MiB
+srun -m plane=2 ./select_nic_ucx ./build/allreduce_swing_mesh_mpi 512 MiB
+
+
+# EXECUTE BASELINE MPI ALL REDUCE CUDA-AWARE
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 512 B
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 1 KiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 4 KiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 8 KiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 32 KiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 64 KiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 128 KiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 256 KiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 512 KiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 1 MiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 2 MiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 8 MiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 16 MiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 64 MiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 128 MiB
+
+srun ./select_nic_ucx ./build/allreduce_cudaaware 256 MiB
+srun ./select_nic_ucx ./build/allreduce_cudaaware 512 MiB

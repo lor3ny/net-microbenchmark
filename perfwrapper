@@ -1,2 +1,0 @@
-#!/bin/bash
-perf record -g -o perf.data.$SLURM_JOB_ID.$SLURM_PROCID $@

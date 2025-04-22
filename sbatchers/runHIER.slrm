@@ -12,6 +12,12 @@
 #SBATCH --account=ehpc181
 #SBATCH --exclusive
 
+# IMPORTANT -----------------------------------
+# 22/04/2025 
+# Used for SC25, not maintained
+# ---------------------------------------------
+
+
 export UCX_PROTO_ENABLE=y
 #export UCX_IB_SL=1
 

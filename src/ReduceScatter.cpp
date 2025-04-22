@@ -9,7 +9,6 @@ using namespace std;
 #define MiB1 1048576
 #define GiB1 1073741824
 #define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
 
 
 void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
@@ -198,12 +197,12 @@ int main(int argc, char *argv[]) {
 
     if (argc < 3) {
         cerr << "Please, insert an integer as argument" << endl;
-        return 1;  
+        return 1;
     }
 
     int size_count = 0;
     try {
-      size_count = stoi(argv[1]);  
+      size_count = stoi(argv[1]);
     } catch (const invalid_argument& e) {
       cerr << "Not valid argument!" << endl;
       return EXIT_FAILURE;
@@ -212,7 +211,7 @@ int main(int argc, char *argv[]) {
     char* size_type;
     long long int multiplier_type = B1;
     try {
-      size_type = argv[2];  
+      size_type = argv[2];
       if(strcmp(size_type,"B") == 0){
         multiplier_type = B1;
       } else if(strcmp(size_type,"KiB") == 0){
@@ -223,17 +222,20 @@ int main(int argc, char *argv[]) {
         multiplier_type = GiB1;
       } else {
         cerr << "Second argument is not valid!" << endl;
-        return EXIT_FAILURE;  
+        return EXIT_FAILURE;
       }
     } catch (const invalid_argument& e) {
         cerr << "Not valid argument!" << endl;
         return EXIT_FAILURE;
     }
 
-    if(size_count == 512 && strcmp(size_type, "B") == 0){
-        cout << " {" << rank << " : "<< processor_name << "}" << endl;
+    int BENCHMARK_ITERATIONS = 100;
+    if(argc >= 4){
+      BENCHMARK_ITERATIONS = atoi(argv[3]);
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+  
 
     int BUFFER_SIZE = (size_count * multiplier_type);
     int msg_count = BUFFER_SIZE/sizeof(float);
@@ -247,25 +249,24 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    for (int i = 0; i < size; i++) {
-        recvcounts[i] = DATA_COUNT / size; 
-    }
-
-
     for (int i = 0; i < msg_count; i++) {
         send_buffer[i] = (float) rank; 
     }
 
+    double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
-        double start_time = MPI_Wtime();
-        double remove_time = reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        double start_time, end_time;
+        start_time = MPI_Wtime();
+        reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
         //MPI_Reduce_scatter(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-        double end_time = MPI_Wtime();
+        end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
-          total_time += end_time - start_time - remove_time;
+          samples[i-WARM_UP] = (end_time - start_time)*1e9;
+          total_time += (end_time - start_time);
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
@@ -274,25 +275,26 @@ int main(int argc, char *argv[]) {
 
     double max_time;
     MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-    float verifier = 0;
-    for(int i = 0; i<msg_count/size; i++){
-      verifier += recv_buffer[i];
-    }
+    MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0){
-        float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-        float bandwidth = (buffer_gib/size) * (size-1);
-        bandwidth = bandwidth / max_time;
-        cout << "REDUCE-SCATTER Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
+      printf("highest\n");
+      for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
+        printf("%d\n", (int) samples[i]);
+      }
+    }
+
+    if(rank == 0){
+      cerr << "BUFFER: " << size_count << size_type << " DONE!" << endl;
     }
 
     free(send_buffer);
     free(recv_buffer);
     free(recvcounts);
-
+    free(samples);
+    free(samples_all);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

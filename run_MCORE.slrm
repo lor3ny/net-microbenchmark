@@ -11,9 +11,27 @@
 
 
 SYSTEM=DEFAULT
-if [ -n "$1" ]; then
+if [ -z "$1" ]; then
+    echo "Error: Missing argument. Please provide a target (e.g., haicgu or leonardo)."
+    exit 1
+else 
     SYSTEM="$1"
 fi
+
+# Define the number of processes
+PROCS=$SLURM_NTASKS
+
+if [ "$1" == "haicgu" ]; then
+    module purge 
+    module load GCC
+    module load OpenMPI
+fi
+
+if [ "$1" == "leonardo" ]; then
+    module purge 
+    module openpmi
+fi
+
 
 # IMPORTANT: Uncomment if you want to fix the algorithm
 
@@ -26,6 +44,7 @@ fi
 
 TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
 if [ "$1" == "nanjing" ]; then
     for BENCH in all2all allgather allreduce reducescatter reduscatter_noop 
@@ -38,19 +57,19 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N $PROCS --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 8 MiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
         mpirun --allow-run-as-root -N $PROCS --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 64 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
         mpirun --allow-run-as-root -N $PROCS --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 128 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
-        mpirun --allow-run-as-root -N $PROCS --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 512 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
+        #mpirun --allow-run-as-root -N $PROCS --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 512 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 else
-    for BENCH in all2all allgather allreduce reducescatter reduscatter_noop 
+    for BENCH in all2all allgather allreduce #reducescatter reduscatter_noop 
     do
-        mpirun -n $PROCS ./build/${BENCH} 256 B 10000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 > data/SYSTEM/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 256 B 10000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        #mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 fi

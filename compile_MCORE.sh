@@ -1,6 +1,11 @@
 rm -rf build
 mkdir build
 
+if [ -z "$1" ]; then
+    echo "Error: Missing argument. Please provide a target (e.g., haicgu or leonardo)."
+    exit 1
+fi
+
 if [ "$1" == "haicgu" ]; then
     module purge 
     module load GCC

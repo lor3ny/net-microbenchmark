@@ -9,7 +9,6 @@ using namespace std;
 #define MiB1 1048576
 #define GiB1 1073741824
 #define WARM_UP 10
-#define BENCHMARK_ITERATIONS 100
 
 #define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
                                        EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \
@@ -204,108 +203,112 @@ void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
 
 
 int main(int argc, char *argv[]) {
-  MPI_Init(&argc, &argv);
+    MPI_Init(&argc, &argv);
 
-  int rank, size, name_len, ret;
-  double total_time = 0.0;
-  char processor_name[MPI_MAX_PROCESSOR_NAME];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Get_processor_name(processor_name, &name_len);
+    int rank, size, name_len, ret;
+    double total_time = 0.0;
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Get_processor_name(processor_name, &name_len);
 
-  if (argc < 3) {
-      cerr << "Please, insert an integer as argument" << endl;
-      return 1;  
-  }
-
-  int size_count = 0;
-  try {
-    size_count = stoi(argv[1]);  
-  } catch (const invalid_argument& e) {
-    cerr << "Not valid argument!" << endl;
-    return EXIT_FAILURE;
-  }
-
-  char* size_type;
-  long long int multiplier_type = B1;
-  try {
-    size_type = argv[2];  
-    if(strcmp(size_type,"B") == 0){
-      multiplier_type = B1;
-    } else if(strcmp(size_type,"KiB") == 0){
-      multiplier_type = KiB1;
-    } else if(strcmp(size_type,"MiB") == 0){
-      multiplier_type = MiB1;
-    } else if(strcmp(size_type,"GiB") == 0){
-      multiplier_type = GiB1;
-    } else {
-      cerr << "Second argument is not valid!" << endl;
-      return EXIT_FAILURE;  
+    if (argc < 3) {
+        cerr << "Please, insert an integer as argument" << endl;
+        return 1;
     }
-  } catch (const invalid_argument& e) {
-    cerr << "Not valid argument!" << endl;
-    return EXIT_FAILURE;
-  }
 
-  if(size_count == 512 && strcmp(size_type, "B") == 0){
-    cout << " {" << rank << " : "<< processor_name << "}" << endl;
-  }
+    int size_count = 0;
+    try {
+      size_count = stoi(argv[1]);
+    } catch (const invalid_argument& e) {
+      cerr << "Not valid argument!" << endl;
+      return EXIT_FAILURE;
+    }
 
-  int BUFFER_SIZE = (size_count * multiplier_type);
-  int msg_count = BUFFER_SIZE/sizeof(float);
-  float *send_buffer = (float*) malloc(BUFFER_SIZE); 
-  float *recv_buffer = (float*) malloc(BUFFER_SIZE);
-  if (send_buffer == NULL || recv_buffer == NULL) {
-      fprintf(stderr, "Memory allocation failed!\n");
-      MPI_Abort(MPI_COMM_WORLD, 1);
-      return -1;
-  }
-
-  for (int i = 0; i < msg_count; i++) {
-      send_buffer[i] = (float) rank; 
-  }
-
-
-  MPI_Op noop_op;
-  MPI_Op_create((MPI_User_function *)noop, 1, &noop_op);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
-
-      double start_time = MPI_Wtime();
-      MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-      //allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-      double end_time = MPI_Wtime();
-
-      if(i>WARM_UP) {
-          total_time += end_time - start_time;
+    char* size_type;
+    long long int multiplier_type = B1;
+    try {
+      size_type = argv[2];
+      if(strcmp(size_type,"B") == 0){
+        multiplier_type = B1;
+      } else if(strcmp(size_type,"KiB") == 0){
+        multiplier_type = KiB1;
+      } else if(strcmp(size_type,"MiB") == 0){
+        multiplier_type = MiB1;
+      } else if(strcmp(size_type,"GiB") == 0){
+        multiplier_type = GiB1;
+      } else {
+        cerr << "Second argument is not valid!" << endl;
+        return EXIT_FAILURE;
       }
+    } catch (const invalid_argument& e) {
+        cerr << "Not valid argument!" << endl;
+        return EXIT_FAILURE;
+    }
 
-      MPI_Barrier(MPI_COMM_WORLD);
-  }
-  total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
+    int BENCHMARK_ITERATIONS = 100;
+    if(argc >= 4){
+      BENCHMARK_ITERATIONS = atoi(argv[3]);
+    }
 
-  double max_time;
-  MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
-  float verifier = 0;
-  for(int i = 0; i<msg_count; i++){
-    verifier += recv_buffer[i];
-  }
 
-  MPI_Barrier(MPI_COMM_WORLD);
+    int BUFFER_SIZE = (size_count * multiplier_type);
+    int msg_count = BUFFER_SIZE/sizeof(float);
+    float *send_buffer = (float*) malloc(BUFFER_SIZE); 
+    float *recv_buffer = (float*) malloc(BUFFER_SIZE);
+    if (send_buffer == NULL || recv_buffer == NULL) {
+        fprintf(stderr, "Memory allocation failed!\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return -1;
+    }
 
-  if(rank == 0){
-    float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-    float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
-    bandwidth = bandwidth / max_time;
-    cout << "ALLREDUCE Buffer: "  << BUFFER_SIZE << " byte - " << buffer_gib << " Gib - " << size_count << size_type << ", verifier: " << verifier << ", Latency: " << max_time << ", Bandwidth: " << bandwidth << endl;
-  }
+    for (int i = 0; i < msg_count; i++) {
+        send_buffer[i] = (float) rank; 
+    }
 
-  free(send_buffer);
-  free(recv_buffer);
+    double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    MPI_Barrier(MPI_COMM_WORLD);
+    for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
-  MPI_Finalize();
-  return EXIT_SUCCESS;
+        double start_time, end_time;
+        start_time = MPI_Wtime();
+        MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        //allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        end_time = MPI_Wtime();
+
+        if(i>WARM_UP) {
+          samples[i-WARM_UP] = (end_time - start_time)*1e9;
+          total_time += (end_time - start_time);
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
+
+    double max_time;
+    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(rank == 0){
+      printf("highest\n");
+      for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
+        printf("%d\n", (int) samples[i]);
+      }
+    }
+
+    if(rank == 0){
+      cerr << "BUFFER: " << size_count << size_type << " DONE!" << endl;
+    }
+
+    free(send_buffer);
+    free(recv_buffer);
+    free(samples);
+    free(samples_all);
+    MPI_Finalize();
+    return EXIT_SUCCESS;
 }
-

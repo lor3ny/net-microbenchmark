@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < msg_count; i++) {
-        send_buffer[i] = (float) rank; 
+        send_buffer[i] = (float) (rand()*rank % 10);
     }
 
     double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);

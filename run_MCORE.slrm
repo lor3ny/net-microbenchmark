@@ -32,6 +32,13 @@ fi
 if [ "$1" == "leonardo" ]; then
     module purge 
     module load openmpi
+    if [ -n "${UCX_IB_SL}" ]; then 
+        export UCX_IB_SL=${UCX_IB_SL}
+    else
+        export UCX_IB_SL=1
+    fi
+    export UCX_PROTO_ENABLE=y
+    export UCX_NET_DEVICES=mlx5_0:1 # This is to force the uss of only onne port (100Gb/s)
 fi
 
 

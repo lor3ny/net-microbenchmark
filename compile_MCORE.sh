@@ -14,7 +14,7 @@ fi
 
 if [ "$1" == "leonardo" ]; then
     module purge 
-    module openpmi
+    module load openmpi
 fi
 
 mpicxx src/ReduceScatter.cpp -O3 -o build/reducescatter

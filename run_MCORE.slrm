@@ -5,7 +5,7 @@
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
-#SBATCH --partition=cn-eth
+#SBATCH --partition=cn-ib
 #SBATCH --account=dcn
 #SBATCH --exclusive
 
@@ -44,11 +44,11 @@ fi
 
 # IMPORTANT: Uncomment if you want to fix the algorithm
 
-export OMPI_MCA_coll_tuned_use_dynamic_rules=1
-export OMPI_MCA_coll_tuned_allgather_algorithm=4
-export OMPI_MCA_coll_tuned_allreduce_algorithm=4
-export OMPI_MCA_coll_tuned_alltoall_algorithm=3
-export OMPI_MCA_coll_tuned_reduce_scatter_algorithm=3
+#export OMPI_MCA_coll_tuned_use_dynamic_rules=1
+#export OMPI_MCA_coll_tuned_allgather_algorithm=4
+#export OMPI_MCA_coll_tuned_allreduce_algorithm=4
+#export OMPI_MCA_coll_tuned_alltoall_algorithm=3
+#export OMPI_MCA_coll_tuned_reduce_scatter_algorithm=3
 #export OMPI_MCA_coll_tuned_allgather_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm=4
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096

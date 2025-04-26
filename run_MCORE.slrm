@@ -5,12 +5,12 @@
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
-#SBATCH --partition=boost_usr_prod
-#SBATCH --account=IscrB_SWING
+#SBATCH --partition=cn-eth
+#SBATCH --account=dcn
 #SBATCH --exclusive
 
-#account haicgu,leonardo = dcn,
-#partition haicgu,leonardo = dcn,
+#account haicgu,leonardo = dcn, IscrB_SWING
+#partition haicgu,leonardo = dcn, boost_usr_prod
 
 SYSTEM=DEFAULT
 if [ -z "$1" ]; then

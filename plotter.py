@@ -35,11 +35,11 @@ def DrawLinePlot(data, name):
     )
 
     ax1.axhline(
-        y=100,
+        y=200,
         color='red',
         linestyle='--',
         linewidth=2,
-        label=f'Theoretical Peak {100} Gb/s'
+        label=f'Theoretical Peak {200} Gb/s'
     )
 
     # Labeling and formatting

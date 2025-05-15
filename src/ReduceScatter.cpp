@@ -8,7 +8,6 @@ using namespace std;
 #define KiB1 1024
 #define MiB1 1048576
 #define GiB1 1073741824
-#define WARM_UP 10
 
 
 void noop(void *in, void *inout, int *len, MPI_Datatype *datatype) {
@@ -232,6 +231,10 @@ int main(int argc, char *argv[]) {
     int BENCHMARK_ITERATIONS = 100;
     if(argc >= 4){
       BENCHMARK_ITERATIONS = atoi(argv[3]);
+    }
+    int WARM_UP = 10;
+    if(argc >= 5){
+      WARM_UP = atoi(argv[4]);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

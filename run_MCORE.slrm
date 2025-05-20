@@ -39,7 +39,7 @@ if [ "$1" == "leonardo" ]; then
         export UCX_IB_SL=1
     fi
     export UCX_PROTO_ENABLE=y
-    export UCX_NET_DEVICES=mlx5_0:1,mlx5_0:2 # This is to force the uss of only one port (100Gb/s)
+    export UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1 # This is to force the uss of only one port (100Gb/s)
     PROCS=$SLURM_NTASKS
     echo $PROCS
 fi

@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=4
-#SBATCH --nodes=4
+#SBATCH --ntasks=2
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=00:10:00  
 #SBATCH --partition=boost_usr_prod
@@ -21,7 +21,7 @@ else
 fi
 
 # Define the number of processes
-PROCS=4
+PROCS=2
 
 if [ "$1" == "haicgu" ]; then
     module purge 
@@ -39,7 +39,7 @@ if [ "$1" == "leonardo" ]; then
         export UCX_IB_SL=1
     fi
     export UCX_PROTO_ENABLE=y
-    export UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1 # This is to force the uss of only one port (100Gb/s)
+    #export UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1 # This is to force the uss of only one port (100Gb/s)
     PROCS=$SLURM_NTASKS
     echo $PROCS
 fi
@@ -77,7 +77,7 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 512 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 else
-    for BENCH in all2all #allgather allreduce reducescatter 
+    for BENCH in pingpong #all2all #allgather allreduce reducescatter 
     do
         mpirun -n $PROCS ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv

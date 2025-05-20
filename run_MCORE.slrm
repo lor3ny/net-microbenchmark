@@ -39,8 +39,9 @@ if [ "$1" == "leonardo" ]; then
         export UCX_IB_SL=1
     fi
     export UCX_PROTO_ENABLE=y
-    export UCX_NET_DEVICES=mlx5_0:1 # This is to force the uss of only one port (100Gb/s)
-    PROCS=$SLRUM_NTASKS
+    export UCX_NET_DEVICES=mlx5_0:1,mlx5_0:2 # This is to force the uss of only one port (100Gb/s)
+    PROCS=$SLURM_NTASKS
+    echo $PROCS
 fi
 
 
@@ -76,18 +77,18 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 512 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 else
-    for BENCH in all2all allgather allreduce reducescatter 
+    for BENCH in all2all #allgather allreduce reducescatter 
     do
-        mpirun -n $PROCS ./build/${BENCH} 256 B 10000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 512 KiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/524288_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 16 MiB 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
-        #mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 128 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 512 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/524288_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 1 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
+        mpirun -n $PROCS ./build/${BENCH} 8 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
+        mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        #mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 fi

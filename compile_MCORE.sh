@@ -22,4 +22,5 @@ mpicxx src/AllReduce.cpp -O3 -o build/allreduce
 mpicxx src/AllGather.cpp -O3 -o build/allgather
 mpicxx src/All2All.cpp -O3 -o build/all2all
 mpicxx src/PingPong.cpp -O3 -o build/pingpong
-mpicxx src/noise_traffic.cpp -O3 -o build/noise_traffic
+mpicxx src/NoiseAll2All.cpp -O3 -o build/noise_all2all
+mpicxx src/NoiseIncast.cpp -O3 -o build/noise_incast

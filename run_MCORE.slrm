@@ -64,6 +64,7 @@ mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 if [ "$1" == "nanjing" ]; then
     for BENCH in all2all allgather allreduce reducescatter
     do
+        echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 16 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv
@@ -78,6 +79,7 @@ if [ "$1" == "nanjing" ]; then
 else
     for BENCH in pingpong all2all allgather allreduce reducescatter 
     do
+        echo $BENCH
         mpirun -n $PROCS ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 16 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 

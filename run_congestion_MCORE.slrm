@@ -20,14 +20,10 @@ else
     SYSTEM="$1"
 fi
 
-# Define the number of processes
-PROCS=4
-
 if [ "$1" == "haicgu" ]; then
     module purge 
     module load GCC
     module load OpenMPI
-    PROCS=$SLURM_NTASKS
 fi
 
 if [ "$1" == "leonardo" ]; then
@@ -40,8 +36,6 @@ if [ "$1" == "leonardo" ]; then
     fi
     export UCX_PROTO_ENABLE=y
     #export UCX_NET_DEVICES=mlx5_0:1
-    PROCS=$SLURM_NTASKS
-    echo $PROCS
 fi
 
 # IMPORTANT: Uncomment if you want to fix the algorithm
@@ -60,7 +54,6 @@ TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 
 mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
-PROCS=4
 
 if [ "$1" == "nanjing" ]; then
 

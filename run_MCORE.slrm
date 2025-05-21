@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=2
-#SBATCH --nodes=2
+#SBATCH --ntasks=4
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1           
-#SBATCH --time=00:10:00  
-#SBATCH --partition=cn-ib
+#SBATCH --time=02:00:00  
+#SBATCH --partition=cn-eth
 #SBATCH --account=dcn
 #SBATCH --exclusive
 
@@ -14,14 +14,14 @@
 
 SYSTEM=DEFAULT
 if [ -z "$1" ]; then
-    echo "Error: Missing argument. Please provide a target (e.g., haicgu or leonardo)."
+    echo "Error: Missing argument. Please provide a target (e.g., haicgu, leonardo or nanjing)."
     exit 1
 else 
     SYSTEM="$1"
 fi
 
 # Define the number of processes
-PROCS=2
+PROCS=4
 
 if [ "$1" == "haicgu" ]; then
     module purge 
@@ -74,10 +74,9 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 64 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 512 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 else
-    for BENCH in pingpong #all2all #allgather allreduce reducescatter 
+    for BENCH in pingpong all2all allgather allreduce reducescatter 
     do
         mpirun -n $PROCS ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
@@ -89,6 +88,5 @@ else
         mpirun -n $PROCS ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 64 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
         mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
-        #mpirun -n $PROCS ./build/${BENCH} 512 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}.csv
     done
 fi

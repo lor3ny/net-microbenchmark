@@ -1,0 +1,115 @@
+#!/bin/bash
+#SBATCH --output=logs/%j.out
+#SBATCH --error=logs/%j.err
+#SBATCH --ntasks=8
+#SBATCH --nodes=8
+#SBATCH --cpus-per-task=1   
+#SBATCH --time=02:00:00  
+#SBATCH --partition=cn-eth
+#SBATCH --account=dcn
+#SBATCH --exclusive
+
+#account haicgu,leonardo = dcn, IscrB_SWING
+#partition haicgu,leonardo = cn-ib or cn-eth, boost_usr_prod
+
+SYSTEM=DEFAULT
+if [ -z "$1" ]; then
+    echo "Error: Missing argument. Please provide a target (e.g., haicgu, leonardo or nanjing)."
+    exit 1
+else 
+    SYSTEM="$1"
+fi
+
+# Define the number of processes
+PROCS=4
+
+if [ "$1" == "haicgu" ]; then
+    module purge 
+    module load GCC
+    module load OpenMPI
+    PROCS=$SLURM_NTASKS
+fi
+
+if [ "$1" == "leonardo" ]; then
+    module purge 
+    module load openmpi
+    if [ -n "${UCX_IB_SL}" ]; then 
+        export UCX_IB_SL=${UCX_IB_SL}
+    else
+        export UCX_IB_SL=1
+    fi
+    export UCX_PROTO_ENABLE=y
+    #export UCX_NET_DEVICES=mlx5_0:1
+    PROCS=$SLURM_NTASKS
+    echo $PROCS
+fi
+
+# IMPORTANT: Uncomment if you want to fix the algorithm
+
+#export OMPI_MCA_coll_tuned_use_dynamic_rules=1
+#export OMPI_MCA_coll_tuned_allgather_algorithm=4
+#export OMPI_MCA_coll_tuned_allreduce_algorithm=4
+#export OMPI_MCA_coll_tuned_alltoall_algorithm=3
+#export OMPI_MCA_coll_tuned_reduce_scatter_algorithm=3
+#export OMPI_MCA_coll_tuned_allgather_algorithm_segmentsize=4096
+#export OMPI_MCA_coll_tuned_allreduce_algorithm=4
+#export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
+#export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
+
+TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
+
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
+
+PROCS=4
+
+if [ "$1" == "nanjing" ]; then
+
+    mpirun mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group1 ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv &
+
+    for BENCH in all2all allgather allreduce reducescatter
+    do
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 16 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 128 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 512 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/524288_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 1 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 8 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 64 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/2hosts_group2 ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+    done
+else
+
+    nodes=($(scontrol show hostnames))
+    group1="${nodes[0]},${nodes[1]},${nodes[2]},${nodes[3]}"
+    group2="${nodes[4]},${nodes[5]},${nodes[6]},${nodes[7]}"
+
+    echo "Group 1 nodes: $group1"
+    echo "Group 2 nodes: $group2"
+
+    srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --cpus-per-task=1 --nodelist=$group1 ./build/noise_traffic &
+
+    echo "Congestion Noise Started!"
+
+    noise_pid=$!
+
+    for BENCH in pingpong all2all allgather allreduce reducescatter 
+    do
+        echo $BENCH
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 16 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 128 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 512 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/524288_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 1 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 64 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+    done
+
+    echo "Benchmarking done, killing noise_traffic (PID $noise_pid)..."
+    kill $noise_pid
+    wait $noise_pid 2>/dev/null
+fi

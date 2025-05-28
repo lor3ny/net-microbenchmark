@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=4
-#SBATCH --nodes=4
+#SBATCH --ntasks=6
+#SBATCH --nodes=6
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
-#SBATCH --partition=cn-eth
+#SBATCH --partition=cn-ib
 #SBATCH --account=dcn
+#SBATCH --reservation=dcn_4
 #SBATCH --exclusive
 
 #account haicgu,leonardo = dcn, IscrB_SWING
@@ -21,7 +22,7 @@ else
 fi
 
 # Define the number of processes
-PROCS=4
+PROCS=10
 
 if [ "$1" == "haicgu" ]; then
     module purge 

@@ -240,9 +240,9 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     int BUFFER_SIZE = (size_count * multiplier_type);
-    int msg_count = BUFFER_SIZE/sizeof(float);
-    float *send_buffer = (float*) malloc(BUFFER_SIZE); 
-    float *recv_buffer = (float*) malloc(BUFFER_SIZE/size);
+    int msg_count = BUFFER_SIZE/sizeof(int);
+    int *send_buffer = (int*) malloc(BUFFER_SIZE); 
+    int *recv_buffer = (int*) malloc(BUFFER_SIZE/size);
     int *recvcounts = (int*) malloc(size * sizeof(int));
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < msg_count; i++) {
-        send_buffer[i] = (float) (rand()*rank % 10);
+        send_buffer[i] = (int) (rand()*rank % 10);
     }
     
     for (int i = 0; i < size; i++){
@@ -265,8 +265,8 @@ int main(int argc, char *argv[]) {
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        //reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Reduce_scatter(send_buffer, recv_buffer, recvcounts, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+        //reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Reduce_scatter(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=6
-#SBATCH --nodes=6
+#SBATCH --ntasks=10
+#SBATCH --nodes=10
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
 #SBATCH --partition=cn-ib
@@ -80,14 +80,14 @@ else
     for BENCH in pingpong all2all allgather allreduce reducescatter 
     do
         echo $BENCH
-        mpirun -n $PROCS ./build/${BENCH} 8 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv 
-        mpirun -n $PROCS ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
-        mpirun -n $PROCS ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        srun ./build/${BENCH} 8 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
+        srun ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
+        srun ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv 
+        srun ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
+        srun ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv 
+        srun ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv 
+        srun ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
+        srun ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        srun ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
     done
 fi

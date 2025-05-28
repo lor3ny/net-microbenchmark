@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   
 
     int BUFFER_SIZE = (size_count * multiplier_type);
-    int msg_count = BUFFER_SIZE/sizeof(float);
+    int msg_count = BUFFER_SIZE/sizeof(int);
     float *send_buffer = (float*) malloc(BUFFER_SIZE*size); 
     float *recv_buffer = (float*) malloc(BUFFER_SIZE*size);
     if (send_buffer == NULL || recv_buffer == NULL) {
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        MPI_Alltoall(send_buffer, msg_count, MPI_FLOAT, recv_buffer, msg_count, MPI_FLOAT, MPI_COMM_WORLD);
+        MPI_Alltoall(send_buffer, msg_count, MPI_INT, recv_buffer, msg_count, MPI_INT, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

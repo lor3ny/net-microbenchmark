@@ -9,6 +9,17 @@ using namespace std;
 #define MiB1 1048576
 #define GiB1 1073741824
 
+#define ALIGNMENT (sysconf(_SC_PAGESIZE))
+static void* malloc_align(size_t size){
+    void *p = NULL;
+    int ret = posix_memalign(&p, ALIGNMENT, size);
+    if (ret != 0){
+        fprintf(stderr, "Failed to allocate memory on rank\n");
+        exit(-1);
+    }
+    return p;
+}
+
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -68,27 +79,26 @@ int main(int argc, char *argv[]) {
   
 
     int BUFFER_SIZE = (size_count * multiplier_type);
-    int msg_count = BUFFER_SIZE/sizeof(int);
-    float *send_buffer = (float*) malloc(BUFFER_SIZE*size); 
-    float *recv_buffer = (float*) malloc(BUFFER_SIZE*size);
+    unsigned char *send_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size); 
+    unsigned char *recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size);
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
         return -1;
     }
 
-    for (int i = 0; i < msg_count; i++) {
-        send_buffer[i] = (float) (rand()*rank % 10); 
+    for (int i = 0; i < BUFFER_SIZE*size; i++) {
+        send_buffer[i] = 'a'; 
     }
 
-    double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
-    double* samples_all = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        MPI_Alltoall(send_buffer, msg_count, MPI_INT, recv_buffer, msg_count, MPI_INT, MPI_COMM_WORLD);
+        MPI_Alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

@@ -58,6 +58,10 @@ fi
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
 
+export OMPI_MCA_btl_openib_eager_limit=16777216 # 16 MiB
+
+ompi_info --param btl openib | grep eager_limit
+
 TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 
 mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
@@ -77,7 +81,7 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
     done
 else
-    for BENCH in pingpong all2all allgather allreduce reducescatter 
+    for BENCH in all2all #pingpong allgather allreduce reducescatter 
     do
         echo $BENCH
         srun ./build/${BENCH} 8 B 10000 1000 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

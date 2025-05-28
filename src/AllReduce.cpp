@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
     if(rank == 0){
       printf("highest\n");
       for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
-        printf("%d\n", (int) samples_all[i]);
+        printf("%.9f\n", samples_all[i]);
       }
     }
 

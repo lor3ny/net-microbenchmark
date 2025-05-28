@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {
-          samples[i-WARM_UP] = (end_time - start_time)*1e9;
+          samples[i-WARM_UP] = (end_time - start_time);
           total_time += (end_time - start_time);
         }
 

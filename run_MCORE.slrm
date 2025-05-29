@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=10
-#SBATCH --nodes=10
+#SBATCH --ntasks=8
+#SBATCH --nodes=8
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
 #SBATCH --partition=cn-eth
@@ -58,9 +58,9 @@ fi
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
 
-export OMPI_MCA_btl_openib_eager_limit=16777216 # 16 MiB
+#export OMPI_MCA_btl_openib_eager_limit=16777216 # 16 MiB
 
-ompi_info --param btl openib | grep eager_limit
+#ompi_info --param btl openib | grep eager_limit
 
 TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 

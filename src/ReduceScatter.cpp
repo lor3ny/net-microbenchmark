@@ -238,9 +238,9 @@ int main(int argc, char *argv[]) {
 
     int BUFFER_SIZE = (size_count * multiplier_type);
     int msg_count = BUFFER_SIZE/sizeof(int);
-    int *send_buffer = (int*) malloc(BUFFER_SIZE); 
-    int *recv_buffer = (int*) malloc(BUFFER_SIZE/size);
-    int *recvcounts = (int*) malloc(size * sizeof(int));
+    int *send_buffer = (int*) malloc_align(BUFFER_SIZE); 
+    int *recv_buffer = (int*) malloc_align(BUFFER_SIZE/size);
+    int *recvcounts = (int*) malloc_align(size * sizeof(int));
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -255,8 +255,8 @@ int main(int argc, char *argv[]) {
         recvcounts[i] = msg_count/size;
     }
 
-    double* samples = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
-    double* samples_all = (double*) malloc(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 

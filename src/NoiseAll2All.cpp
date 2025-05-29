@@ -1,6 +1,4 @@
-#include <mpi.h>
-#include <vector>
-#include <iostream>
+#include "common.hpp"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);

@@ -1,14 +1,6 @@
-#include <mpi.h>
-#include <iostream>
-#include <cstring>
+#include "common.hpp"
 
 using namespace std;
-
-#define B1 1
-#define KiB1 1024
-#define MiB1 1048576
-#define GiB1 1073741824
-
 
 
 static inline int copy_buffer_different_dt (const void *input_buffer, size_t scount,
@@ -145,10 +137,10 @@ int main(int argc, char *argv[]) {
 
 
     int BUFFER_SIZE = (size_count * multiplier_type);
-      int MSG_BUFFER_SIZE = BUFFER_SIZE / size;
-      int msg_count = MSG_BUFFER_SIZE / sizeof(int);
-      int *send_buffer = (int*) malloc(MSG_BUFFER_SIZE);
-      int *recv_buffer = (int*) malloc(BUFFER_SIZE);
+    int MSG_BUFFER_SIZE = BUFFER_SIZE / size;
+    int msg_count = MSG_BUFFER_SIZE / sizeof(int);
+    int *send_buffer = (int*) malloc(MSG_BUFFER_SIZE);
+    int *recv_buffer = (int*) malloc(BUFFER_SIZE);
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);

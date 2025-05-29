@@ -1,13 +1,8 @@
-#include <mpi.h>
-#include <iostream>
-#include <cstring>
+#include "common.hpp"
+
 
 using namespace std;
 
-#define B1 1
-#define KiB1 1024
-#define MiB1 1048576
-#define GiB1 1073741824
 
 #define COLL_BASE_COMPUTE_BLOCKCOUNT( COUNT, NUM_BLOCKS, SPLIT_INDEX,       \
                                        EARLY_BLOCK_COUNT, LATE_BLOCK_COUNT ) \

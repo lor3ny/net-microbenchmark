@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
-#SBATCH --ntasks=10
-#SBATCH --nodes=10
+#SBATCH --ntasks=8
+#SBATCH --nodes=8
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
 #SBATCH --partition=cn-eth
@@ -91,7 +91,9 @@ else
         srun ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv 
         srun ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv 
         srun ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
-        srun ./build/${BENCH} 16 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
-        srun ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        srun ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        srun ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
     done
 fi
+
+# usually 16 and 128 are 100 iterations

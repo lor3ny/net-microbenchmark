@@ -1,0 +1,110 @@
+#!/bin/bash
+#SBATCH --output=logs/%j.out
+#SBATCH --error=logs/%j.err
+#SBATCH --nodes=16
+#SBATCH --ntasks-per-node=32
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=4
+#SBATCH --gres=gpu:4 
+#SBATCH --time=00:20:00  
+#SBATCH --partition=boost_usr_prod
+#SBATCH --account=IscrB_SWING
+#SBATCH --dependency=afterany:16475405
+#--qos=boost_qos_bprod
+#SBATCH --exclusive
+
+# IMPORTANT -----------------------------------
+# 22/04/2025 
+# Used for SC25, not maintained
+# ---------------------------------------------
+
+
+export UCX_PROTO_ENABLE=y
+export UCX_IB_SL=1
+
+PROCS=256
+
+TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
+
+if [ "$1" == "Marenostrum" ]; then
+    module purge
+    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+fi
+
+if [ "$1" == "leonardo" ]; then
+    module purge
+    module load nccl
+    module load openmpi/4.1.6--nvhpc--23.11
+    #export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--23.11/lib/
+fi
+SYSTEM="$1"
+
+
+
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
+
+for BENCH in allreduce_hier_bw_mpi allreduce_hier_lat_mpi #allreduce_nccl #allreduce_cudaaware allreduce_hier_bw_nccl 
+do
+    #BUFFER_SIZE BUFFER_MULTIPLIER ITERATIONS INTRA_SEGMENT_SIZE INTER_SEGMENT_SIZE
+    if [ "$1" == "Marenostrum" ]; then
+        module purge
+        module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+    fi
+
+    if [ "$1" == "leonardo" ]; then
+        module purge
+        module load nccl
+        module load openmpi/4.1.6--nvhpc--24.3
+        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/lib/
+    fi
+
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 256 B 1000 256 256 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 2 KiB 1000 2048 1024 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 16 KiB 1000 16384 1024 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 128 KiB 1000 131072 8192 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 1 MiB 1000 1048576 65536 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 8 MiB 1000 8388608 4194304 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 64 MiB 100 67108864 4194304 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 128 MiB 100 134217728 16777216 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_int32.csv
+    srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 512 MiB 100 536870912 16777216 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}_int32.csv
+
+done
+
+
+BENCH="allreduce_nccl"
+
+# for ALGO in "ring" "tree" "collnet" "collnetchain" "collnetdirect" "nvls" "nvlstree" "pat" 
+# do
+if [ "$1" == "Marenostrum" ]; then
+    module purge
+    module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
+fi
+
+if [ "$1" == "leonardo" ]; then
+    module purge
+    module load nccl
+    module load cuda
+    module load openmpi 
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/lib/
+fi
+
+ALGO="default"
+echo $ALGO
+#export NCCL_ALGO=$ALGO
+export NCCL_BUFFSIZE=256
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 256 B 1000 256 256 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/256_${BENCH}_${ALGO}_int32.csv
+export NCCL_BUFFSIZE=1024
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 2 KiB 1000 2048 1024 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2048_${BENCH}_${ALGO}_int32.csv
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 16 KiB 1000 16384 1024 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16384_${BENCH}_${ALGO}_int32.csv
+export NCCL_BUFFSIZE=8192
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 128 KiB 1000 131072 8192 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/131072_${BENCH}_${ALGO}_int32.csv
+export NCCL_BUFFSIZE=65536
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 1 MiB 1000 1048576 65536 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1048576_${BENCH}_${ALGO}_int32.csv
+export NCCL_BUFFSIZE=4194304
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 8 MiB 1000 8388608 4194304 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8388608_${BENCH}_${ALGO}_int32.csv
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 64 MiB 100 67108864 4194304 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/67108864_${BENCH}_${ALGO}_int32.csv
+export NCCL_BUFFSIZE=16777216
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 128 MiB 100 134217728 16777216 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_${ALGO}_int32.csv
+srun --ntasks=64 --ntasks-per-node=4 ./build/${BENCH} 512 MiB 100 536870912 16777216 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/536870912_${BENCH}_${ALGO}_int32.csv
+
+# done

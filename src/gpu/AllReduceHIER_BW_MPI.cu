@@ -973,7 +973,6 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     int rank, size, name_len, ret;
-    double total_time = 0.0;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -1135,15 +1134,11 @@ int main(int argc, char *argv[]) {
 
         if(i>WARM_UP) {
           samples[i-WARM_UP] = (end_time - start_time)*1e9;
-          total_time += (end_time - start_time);
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
 
-    double max_time;
-    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     CUDA_CHECK(cudaMemcpy(h_recv_buffer, d_recv_buffer, (size_t) BUFFER_SIZE, cudaMemcpyDeviceToHost));
@@ -1153,12 +1148,8 @@ int main(int argc, char *argv[]) {
     if(rank == 0){
       printf("highest\n");
       for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
-        printf("%d\n", (int) samples[i]);
+        printf("%d\n", (int) samples_all[i]);
       }
-
-      float buffer_gib = (BUFFER_SIZE / (float) (1024*1024*1024)) * 8;
-      float bandwidth =  2 * buffer_gib * ((size-1)/(float)size);
-      bandwidth = bandwidth / max_time;
     }
 
     if(rank == 0){

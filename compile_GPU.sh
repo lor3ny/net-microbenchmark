@@ -9,12 +9,22 @@ fi
 if [ "$1" == "leonardo" ]; then
     module purge
     module load nccl
-    module load openmpi/4.1.6--nvhpc--23.11
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--23.11/lib/
+    module load openmpi/4.1.6--nvhpc--24.3
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/lib/
 fi
 
 mpicxx src/gpu/AllReduceHIER_BW_MPI.cu -O3 -o build/allreduce_hier_bw_mpi -lcudart
 mpicxx src/gpu/AllReduceHIER_LAT_MPI.cu -O3 -o build/allreduce_hier_lat_mpi -lcudart
+
+if [ "$1" == "leonardo" ]; then
+    module purge
+    module load nccl
+    module load cuda
+    module load openmpi 
+    #export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/lib/
+fi
+
+#-I/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/include -L/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--24.3/lib
+nvcc src/gpu/AllReduceNCCL.cu -O3 -o build/allreduce_nccl -lcudart -lnccl -lmpi
 #nvcc src/gpu/AllReduceHIER_BW_NCCL.cu -O3 -o build/allreduce_hier_bw_nccl -lmpi -lnccl
-nvcc -I/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--23.11/include -L/leonardo/prod/opt/libraries/openmpi/4.1.6/nvhpc--23.11/lib src/gpu/AllReduceNCCL.cu -O3 -o build/allreduce_nccl -lcudart -lnccl -lmpi
 #mpicxx src/gpu/AllReduceCUDA-AWARE.cpp -O3 -o build/allreduce_cudaaware -lcudart

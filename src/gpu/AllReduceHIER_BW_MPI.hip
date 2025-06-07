@@ -668,8 +668,6 @@ double allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t cou
 }
 #endif
 
-
-
 int allreduce_swing_bdw_mesh(const void *send_buf, void *recv_buf, size_t count,
   MPI_Datatype dtype, MPI_Op op, MPI_Comm comm, uint *peers, swing_tree_t *tree, char *tmp_buf_raw, size_t segment_size){
 
@@ -1074,9 +1072,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(inter_comm, &inter_rank);
     //printf("Rank %d - intra_rank %d - inter_rank %d - intra_size %d - inter_size %d\n", rank, intra_rank, inter_rank, intra_size, inter_size); fflush(stdout);
 
-
-    //SwingCoordConverter* scc = new SwingCoordConverter(new uint[2]{2, (uint) size/2}, 2); //NON SONO CONVINTO DI QUESTI VALORI, NELLO SPECIFICO unint[2]{1,1}
-    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{size / GPUS_PER_NODE}, 1);
+    SwingCoordConverter* scc = new SwingCoordConverter(new uint[1]{(uint) size / GPUS_PER_NODE}, 1);
     uint* peers = (uint*) malloc(sizeof(uint)*scc->size);
     swing_tree_t tree = get_tree(0, 0, SWING_ALGO_FAMILY_SWING, SWING_DISTANCE_INCREASING, scc);
     compute_peers(inter_rank, 0, SWING_ALGO_FAMILY_SWING, scc, peers);

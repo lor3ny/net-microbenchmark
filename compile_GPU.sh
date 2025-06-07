@@ -1,15 +1,16 @@
 rm -rf build
 mkdir build
 
-if [ "$1" == "Marenostrum" ]; then
+if [ "$1" == "marenostrum5" ]; then
     module purge  
     module load EB/apps EB/install OpenMPI/4.1.5-NVHPC-23.7-CUDA-12.2.0 nccl
-fi
-
-if [ "$1" == "leonardo" ]; then
+elif [ "$1" == "leonardo" ]; then
     module purge
     module load nccl
     module load openmpi/4.1.6--nvhpc--24.3
+else
+    echo "Please specify system name"
+    exit
 fi
 
 mpicxx src/gpu/AllReduceHIER_BW_MPI.cu -O3 -o build/allreduce_hier_bw_mpi -lcudart

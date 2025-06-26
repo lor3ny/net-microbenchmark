@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Get_processor_name(processor_name, &name_len);
 
-    if(size%2 != 0){
-      cerr << "Ping Pong requires even node count!" << endl;
+    if(size != 2){
+      cerr << "Point-Point requires only 2 procs!" << endl;
       return 1;
     }
 
@@ -91,12 +91,24 @@ int main(int argc, char *argv[]) {
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        if(rank % 2 == 0){
-            MPI_Send(send_buffer, msg_count, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
-            MPI_Recv(recv_buffer, msg_count, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }else{
-            MPI_Recv(recv_buffer, msg_count, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Send(send_buffer, msg_count, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
+        if(rank == 0){
+          if(i % 2 == 0){
+              MPI_Send(send_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD);
+              MPI_Recv(recv_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          }else{
+              MPI_Recv(recv_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+              MPI_Send(send_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD);
+          }
+        }
+
+        if(rank == 1){
+          if(i % 2 == 0){
+            MPI_Recv(recv_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(send_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD);
+          } else {
+            MPI_Send(send_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            MPI_Recv(recv_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          }
         }
         end_time = MPI_Wtime();
 

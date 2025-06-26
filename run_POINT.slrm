@@ -7,7 +7,6 @@
 #SBATCH --time=02:00:00  
 #SBATCH --partition=cn-eth
 #SBATCH --account=dcn
-#SBATCH --reservation=dcn_4
 #SBATCH --exclusive
 
 #account haicgu,leonardo = dcn, IscrB_SWING

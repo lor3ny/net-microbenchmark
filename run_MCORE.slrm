@@ -66,7 +66,7 @@ TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
 if [ "$1" == "nanjing" ]; then
-    for BENCH in all2all allgather allreduce reducescatter
+    for BENCH in all2all all2all_raw allgather #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
@@ -80,7 +80,7 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
     done
 else
-    for BENCH in all2all allgather allreduce reducescatter 
+    for BENCH in all2all all2all_raw allgather #allreduce reducescatter 
     do
         echo $BENCH
         srun ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

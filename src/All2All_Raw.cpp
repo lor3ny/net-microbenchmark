@@ -8,17 +8,17 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    MPI_Aint send_extent, recv_extent;
-    MPI_Type_get_extent(sendtype, &send_extent);
+    size_t datatype_size;
+    datatype_size = sizeof(sendtype)
     MPI_Type_get_extent(recvtype, &recv_extent);
 
     const char* sbuf = static_cast<const char*>(sendbuf);
     char* rbuf = static_cast<char*>(recvbuf);
 
     // Copy local data directly (self-send)
-    std::memcpy(rbuf + rank * recv_extent * recvcount,
-                sbuf + rank * send_extent * sendcount,
-                sendcount * send_extent);
+    std::memcpy(rbuf + rank * datatype_size * recvcount,
+                sbuf + rank * datatype_size * sendcount,
+                sendcount * datatype_size);
 
     std::vector<MPI_Request> requests;
 
@@ -28,8 +28,8 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
         MPI_Request req_recv;
         MPI_Request req_send;
 
-        MPI_Isend(sbuf + i * send_extent * sendcount, sendcount, sendtype, i, 0, comm, &req_recv);
-        MPI_Irecv(rbuf + i * recv_extent * recvcount, recvcount, recvtype, i, 0, comm, &req_send);
+        MPI_Isend(sbuf + i * datatype_size * sendcount, sendcount, sendtype, i, 0, comm, &req_recv);
+        MPI_Irecv(rbuf + i * datatype_size * recvcount, recvcount, recvtype, i, 0, comm, &req_send);
         
         requests.push_back(req_recv);
         requests.push_back(req_send);

@@ -11,30 +11,35 @@ import sys
 def DrawLinePlot(data, name):
     print(f"Plotting data collective: {name}")
 
-    # Use a dark theme for the plot
-    sns.set_style("whitegrid")  # darker background for axes
+    # Imposta stile e contesto
+    sns.set_style("whitegrid")
+    sns.set_context("talk")
 
-    # Create the figure and axes
+    # Crea figura
     f, ax1 = plt.subplots(figsize=(20, 10))
-    
-    # Convert input data to a DataFrame
+
+    # Conversione dati in DataFrame
     df = pd.DataFrame(data)
+    df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
 
-    df['cluster_collective'] = df['cluster'].astype(str) + '_' + df['collective'].astype(str)
+    # Palette migliorata
+    palette = sns.color_palette("Set2", n_colors=df['cluster_collective'].nunique())
 
-    # Plot with seaborn
-    fig = sns.lineplot(
+    # Lineplot con stile e markers
+    sns.lineplot(
         data=df,
-        x='message_text',
+        x='message',
         y='bandwidth',
         hue='cluster_collective',
         style='cluster_collective',
         markers=True,
         markersize=10,
         linewidth=3,
-        ax=ax1
+        ax=ax1,
+        palette=palette
     )
 
+    # Linea teorica
     ax1.axhline(
         y=100,
         color='red',
@@ -43,18 +48,21 @@ def DrawLinePlot(data, name):
         label=f'Theoretical Peak {100} Gb/s'
     )
 
-    # Labeling and formatting
+    # Etichette
     ax1.tick_params(axis='both', which='major', labelsize=18)
     ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=28, labelpad=20)
     ax1.set_xlabel('Message Size', fontsize=28, labelpad=20)
     ax1.set_title(f'{name}', fontsize=38, pad=30)
 
-    # Show legend and layout
-    ax1.legend(fontsize=20)
+    # Legenda centrata in basso fuori dal grafico
+    ax1.legend(fontsize=18, loc='upper center', bbox_to_anchor=(0.5, -0.15),
+               ncol=3, frameon=True)
+
     plt.tight_layout()
 
-    # Save the figure
-    plt.savefig(f'plots/{name}_line.png', dpi=300)  # save with dark background
+    # Salvataggio figura
+    plt.savefig(f'plots/{name}_line.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 
 
@@ -63,34 +71,47 @@ def DrawScatterPlot(data, name):
 
     # Use a dark theme for the plot
     sns.set_style("whitegrid")  # darker background for axes
+    sns.set_context("talk")
 
     # Create the figure and axes
     f, ax1 = plt.subplots(figsize=(20, 10))
     
     # Convert input data to a DataFrame
     df = pd.DataFrame(data)
+    df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
+    palette = sns.color_palette("Set2", n_colors=df['cluster_collective'].nunique())
 
     # Plot with seaborn
     fig = sns.scatterplot(
         data=df,
         x='iteration',
         y='bandwidth',
-        hue='cluster',
-        style='message_text',
-        #size='iteration',
-        #sizes=(0.5, 100), 
+        hue='Cluster',
+        style='Message',
+        s=80,
         ax=ax1,
-        alpha=0.8 
+        alpha=0.9,
+        palette=palette
     )
 
     # Labeling and formatting
-    ax1.tick_params(axis='both', which='major', labelsize=18)
-    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=28, labelpad=20)
-    ax1.set_xlabel('Iterations', fontsize=28, labelpad=20)
-    ax1.set_title(f'{name}', fontsize=38, pad=30)
+    ax1.tick_params(axis='both', which='major', labelsize=28)
+    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=35, labelpad=20)
+    ax1.set_xlabel('Iterations', fontsize=35, labelpad=20)
+    ax1.set_title(f'{name}', fontsize=45, pad=30)
 
     # Show legend and layout
-    ax1.legend(fontsize=20)
+    # Filtra legenda: solo cluster_collective unici + linea teorica
+
+    ax1.legend(
+        fontsize=25,           # grandezza testo etichette
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.2),  # più spazio sotto
+        ncol=5,
+        frameon=True,
+        title=None,
+        markerscale=2.0        # ingrandisce i marker nella legenda
+    )
     plt.tight_layout()
 
     # Save the figure
@@ -163,9 +184,9 @@ def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False):
             data['latency'].extend(latencies)
             data['iteration'].extend(iterations)
             data['bandwidth'].extend(bandwidth)
-            data['message_text'].extend([msg]*len(latencies))
+            data['Message'].extend([msg]*len(latencies))
             data['message_bytes'].extend([message_bytes]*len(latencies))
-            data['cluster'].extend([cluster]*len(latencies))
+            data['Cluster'].extend([cluster]*len(latencies))
             data['collective'].extend([collective]*len(latencies))
 
     return data
@@ -180,11 +201,11 @@ if __name__ == "__main__":
 
     messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
     data = {
-        'message_text': [],
+        'Message': [],
         'message_bytes': [],
         'latency': [],
         'bandwidth': [],
-        'cluster': [],
+        'Cluster': [],
         'collective': [],
         'iteration': []
     }
@@ -199,17 +220,23 @@ if __name__ == "__main__":
     collectives = ["all2all", "allgather", "reducescatter", "allreduce", "pointpoint"]
 
 
-    folder_eth = f"data/nanjing/{nodes}"
-    folder_ib = f"data/haicgu-eth-1000/{nodes}"
+    folder_nanjing = f"data/nanjing/4"
+    folder_haicgu = f"data/haicgu-eth-1000/4"
+
+    data = LoadData(data, "HAICGU", 4 , folder_haicgu, messages=['128 MiB'], cong=False, coll="allgather")
+    data = LoadData(data, "Nanjing", 4 , folder_nanjing, messages=['128 MiB'], cong=False, coll="allgather")
+    DrawScatterPlot(data, f"Nanjing vs HAICGU 4 Nodes All-Gather")
+    CleanData(data)
+
     # for coll in collectives:
     #     for mess in messages:  
-    #         data = LoadData(data, "haicgu-eth", nodes , folder_eth, [mess], cong=False, coll=coll)
-    #         data = LoadData(data, "nanjing", nodes , folder_ib, [mess], cong=False, coll=coll)
+    #         data = LoadData(data, "HAICGU", nodes , folder_haicgu, [mess], cong=False, coll=coll)
+    #         data = LoadData(data, "Nanjing", nodes , folder_nanjing, [mess], cong=False, coll=coll)
     #         DrawScatterPlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll} {mess}")
     #         CleanData(data)
 
-    for coll in collectives:
-        data = LoadData(data, "haicgu-eth", nodes , folder_eth, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, "nanjing", nodes , folder_ib, messages=messages, cong=False, coll=coll)
-        DrawLinePlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll}")
-        CleanData(data)
+    # for coll in collectives:
+    #     data = LoadData(data, "HAICGU", nodes , folder_haicgu, messages=messages, cong=False, coll=coll)
+    #     data = LoadData(data, "Nanjing", nodes , folder_nanjing, messages=messages, cong=False, coll=coll)
+    #     DrawLinePlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll}")
+    #     CleanData(data)

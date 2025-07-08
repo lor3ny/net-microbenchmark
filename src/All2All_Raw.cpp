@@ -9,8 +9,8 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     MPI_Comm_size(comm, &size);
 
     MPI_Aint send_extent, recv_extent;
-    MPI_Type_extent(sendtype, &send_extent);
-    MPI_Type_extent(recvtype, &recv_extent);
+    MPI_Type_get_extent(sendtype, &send_extent);
+    MPI_Type_get_extent(recvtype, &recv_extent);
 
     const char* sbuf = static_cast<const char*>(sendbuf);
     char* rbuf = static_cast<char*>(recvbuf);

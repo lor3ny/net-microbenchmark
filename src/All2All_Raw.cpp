@@ -8,7 +8,7 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    size_t datatype_size;
+    int datatype_size;
     MPI_Type_size(sendtype, &datatype_size);
 
     const char* sbuf = static_cast<const char*>(sendbuf);

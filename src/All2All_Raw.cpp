@@ -9,7 +9,7 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     MPI_Comm_size(comm, &size);
 
     size_t datatype_size;
-    datatype_size = sizeof(sendtype);
+    MPI_Type_size(sendtype, &datatype_size);
 
     const char* sbuf = static_cast<const char*>(sendbuf);
     char* rbuf = static_cast<char*>(recvbuf);
@@ -27,11 +27,11 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
         MPI_Request req_recv;
         MPI_Request req_send;
 
-        MPI_Isend(sbuf + i * datatype_size * sendcount, sendcount, sendtype, i, 0, comm, &req_recv);
-        MPI_Irecv(rbuf + i * datatype_size * recvcount, recvcount, recvtype, i, 0, comm, &req_send);
+        MPI_Isend(sbuf + i * datatype_size * sendcount, sendcount, sendtype, i, 0, comm, &req_send);
+        MPI_Irecv(rbuf + i * datatype_size * recvcount, recvcount, recvtype, i, 0, comm, &req_recv);
         
-        requests.push_back(req_recv);
         requests.push_back(req_send);
+        requests.push_back(req_recv);
     }
 
     MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);

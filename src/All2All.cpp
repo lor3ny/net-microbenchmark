@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     if(rank == 0){
       printf("highest\n");
       int times_count = sizeof(samples_all)/sizeof(double);
-      cerr << times_count << endl;
+      cerr << sizeof(samples_all) << " : " << sizeof(samples) << endl;
       for(int i = 0; i < times_count; ++i){
         printf("%.9f\n", samples_all[i]);
       }

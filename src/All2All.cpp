@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 
     double max_time;
     //MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Gather(samples, BENCHMARK_ITERATIONS, MPI_DOUBLE, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, 0, MPI_COMM_WORLD)
+    MPI_Gather(samples, BENCHMARK_ITERATIONS, MPI_DOUBLE, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
 

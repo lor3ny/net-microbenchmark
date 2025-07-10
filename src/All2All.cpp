@@ -6,7 +6,6 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     int rank, size, name_len, ret;
-    double total_time = 0.0;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]) {
     }
 
     double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
-    double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
+    double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS * size);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
@@ -84,21 +83,20 @@ int main(int argc, char *argv[]) {
 
         if(i>WARM_UP) {
           samples[i-WARM_UP] = (end_time - start_time);
-          total_time += (end_time - start_time);
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
 
     double max_time;
-    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    //MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Gather(samples, BENCHMARK_ITERATIONS, MPI_DOUBLE, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, 0, MPI_COMM_WORLD)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0){
       printf("highest\n");
+      times_count = sizeof(samples_all)/sizeof(double)
       for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
         printf("%.9f\n", samples_all[i]);
       }

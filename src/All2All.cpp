@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
 
     if(rank == 0){
       printf("highest\n");
-      times_count = sizeof(samples_all)/sizeof(double)
-      for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
+      int times_count = sizeof(samples_all)/sizeof(double);
+      for(int i = 0; i < times_count; ++i){
         printf("%.9f\n", samples_all[i]);
       }
     }

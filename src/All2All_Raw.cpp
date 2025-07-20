@@ -14,14 +14,18 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     const char* sbuf = static_cast<const char*>(sendbuf);
     char* rbuf = static_cast<char*>(recvbuf);
 
+
+    double mem_time = MPI_Wtime(); 
     // Copy local data directly (self-send)
     std::memcpy(rbuf + rank * datatype_size * recvcount,
                 sbuf + rank * datatype_size * sendcount,
                 sendcount * datatype_size);
 
+    double final_mem_time = MPI_Wtime() - mem_time;
+    cerr << "MEM: " << final_mem_time << "s" << endl;
+    
+    double comm_time = MPI_Wtime();
     std::vector<MPI_Request> requests;
-
-    double test_time = MPI_Wtime();
     for (int i = 0; i < size; ++i) {
         if (i == rank) continue;
 
@@ -36,8 +40,8 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
 
     MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
-    double final_test_time = MPI_Wtime() - test_time;
-    cerr << final_test_time << "s" << endl;
+    double final_comm_time = MPI_Wtime() - comm_time;
+    cerr << "COMM: " << final_comm_time << "s" << endl;
 }
 
 int main(int argc, char *argv[]) {

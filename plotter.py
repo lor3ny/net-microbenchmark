@@ -177,7 +177,7 @@ def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False):
             elif collective == 'allreduce':
                 gb_sent = 2*(message_bytes/1e9)*((nodes-1)/nodes)*8
             elif collective == "pointpoint":
-                gb_sent = 2*(message_bytes/1e9)*8
+                gb_sent = (message_bytes/1e9)*8
 
             bandwidth = [gb_sent / x for x in latencies]
 

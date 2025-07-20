@@ -96,11 +96,11 @@ int main(int argc, char *argv[]) {
 
         start_time = MPI_Wtime();
         if(rank == 0){
-          MPI_Isend(send_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, req_send);
-          MPI_Irecv(recv_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, req_recv);
+          MPI_Isend(send_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, &req_send);
+          MPI_Irecv(recv_buffer, msg_count, MPI_INT, 1, 0, MPI_COMM_WORLD, &req_recv);
         }else if(rank == 1){
-          MPI_Isend(send_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, req_send);
-          MPI_Irecv(recv_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, req_recv);
+          MPI_Isend(send_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, &req_send);
+          MPI_Irecv(recv_buffer, msg_count, MPI_INT, 0, 0, MPI_COMM_WORLD, &req_recv);
         }
         requests.push_back(req_send);
         requests.push_back(req_recv);

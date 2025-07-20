@@ -21,7 +21,7 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     std::vector<MPI_Request> requests;
 
-    test_time = MPI_Wtime();
+    double test_time = MPI_Wtime();
     for (int i = 0; i < size; ++i) {
         if (i == rank) continue;
 
@@ -36,7 +36,7 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
 
     MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
-    final_test_time = MPI_Wtime() - test_time;
+    double final_test_time = MPI_Wtime() - test_time;
     cerr << final_test_time << "s" << endl;
 }
 

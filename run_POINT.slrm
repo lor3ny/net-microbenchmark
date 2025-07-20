@@ -66,6 +66,10 @@ TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
 if [ "$1" == "nanjing" ]; then
+
+    export PATH=/root/hpc/build/gcc/bin:/root/hpc/build/bin:$PATH
+    export LD_LIBRARY_PATH=/root/hpc/build/gcc/lib64:/root/hpc/build/lib:$LD_LIBRARY_PATH
+
     for BENCH in pointpoint pointpoint_async
     do
         echo $BENCH

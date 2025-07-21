@@ -70,7 +70,7 @@ if [ "$1" == "nanjing" ]; then
     export PATH=/root/hpc/build/gcc/bin:/root/hpc/build/bin:$PATH
     export LD_LIBRARY_PATH=/root/hpc/build/gcc/lib64:/root/hpc/build/lib:$LD_LIBRARY_PATH
 
-    for BENCH in all2all_raw #all2all allgather allreduce reducescatter
+    for BENCH in all2all_raw allgather_raw #allgather allreduce reducescatter
     do
         echo $BENCH
         #mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

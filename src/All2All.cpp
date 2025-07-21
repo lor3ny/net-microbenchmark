@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < BUFFER_SIZE*size; i++) {
-        send_buffer[i] = 'a'; 
+        send_buffer[i] = rank; 
     }
 
     double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);

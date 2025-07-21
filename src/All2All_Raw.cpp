@@ -2,6 +2,43 @@
 
 using namespace std;
 
+int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
+  int incorrect = 0;
+  for(int i = 0; i<dim; ++i){
+    try {
+      if(buf_a[i] != buf_b[i]){
+        cout << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;
+        incorrect = -1;
+      }
+    } catch (const invalid_argument& e) {
+        cerr << "ERROR: Memory corruption on verification." << endl;
+        return EXIT_FAILURE;
+    }
+  }
+  return incorrect;
+}
+
+
+void all2all_memcpy(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype){
+
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    int datatype_size;
+    MPI_Type_size(sendtype, &datatype_size);
+
+    const char* sbuf = static_cast<const char*>(sendbuf);
+    char* rbuf = static_cast<char*>(recvbuf);
+
+    double mem_time = MPI_Wtime(); 
+    // Copy local data directly (self-send)
+    std::memcpy(rbuf + rank * datatype_size * recvcount,
+                sbuf + rank * datatype_size * sendcount,
+                sendcount * datatype_size);
+
+}
+
 void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
                      void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) {
     int rank, size;
@@ -14,17 +51,16 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     const char* sbuf = static_cast<const char*>(sendbuf);
     char* rbuf = static_cast<char*>(recvbuf);
 
+    // double mem_time = MPI_Wtime(); 
+    // // Copy local data directly (self-send)
+    // std::memcpy(rbuf + rank * datatype_size * recvcount,
+    //             sbuf + rank * datatype_size * sendcount,
+    //             sendcount * datatype_size);
 
-    double mem_time = MPI_Wtime(); 
-    // Copy local data directly (self-send)
-    std::memcpy(rbuf + rank * datatype_size * recvcount,
-                sbuf + rank * datatype_size * sendcount,
-                sendcount * datatype_size);
-
-    double final_mem_time = MPI_Wtime() - mem_time;
-    cerr << "MEM: " << final_mem_time << "s" << endl;
+    // double final_mem_time = MPI_Wtime() - mem_time;
+    // cerr << "MEM: " << final_mem_time << "s" << endl;
     
-    double comm_time = MPI_Wtime();
+    // double comm_time = MPI_Wtime();
     std::vector<MPI_Request> requests;
     for (int i = 0; i < size; ++i) {
         if (i == rank) continue;
@@ -40,8 +76,8 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
 
     MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
-    double final_comm_time = MPI_Wtime() - comm_time;
-    cerr << "COMM: " << final_comm_time << "s" << endl;
+    // double final_comm_time = MPI_Wtime() - comm_time;
+    // cerr << "COMM: " << final_comm_time << "s" << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -110,14 +146,29 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    srand(time(NULL)*rank); 
     for (int i = 0; i < BUFFER_SIZE*size; i++) {
-        send_buffer[i] = 'a'; 
+        send_buffer[i] = rand()*rank % size; 
     }
+
+    // TESTING THE COLLECTIVE
+ 
+    unsigned char *t_recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size);
+    alltoall_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE);
+    custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+
+    MPI_Alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, t_recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+
+    VerifyCollective(recv_buffer, t_recv_buffer, BUFFER_SIZE*size, rank);
+
+    // TESTING THE COLLECTIVE
 
     double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
+
+        alltoall_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE);
 
         double start_time, end_time;
         start_time = MPI_Wtime();
@@ -126,7 +177,7 @@ int main(int argc, char *argv[]) {
 
         if(i>WARM_UP) {
           samples[i-WARM_UP] = (end_time - start_time);
-          total_time += (end_time - start_time);
+          total_time += (end_time - start_time);S
         }
 
         MPI_Barrier(MPI_COMM_WORLD);

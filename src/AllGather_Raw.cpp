@@ -2,6 +2,7 @@
 
 using namespace std;
 
+
 int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int rank){
   int incorrect = 0;
   for(int i = 0; i<dim; ++i){
@@ -17,67 +18,87 @@ int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int ra
   return incorrect;
 }
 
+static inline int copy_buffer_different_dt (const void *input_buffer, size_t scount,
+                                            const MPI_Datatype sdtype, void *output_buffer,
+                                            size_t rcount, const MPI_Datatype rdtype) {
+  if (input_buffer == NULL || output_buffer == NULL || scount <= 0 || rcount <= 0) {
+    return MPI_ERR_UNKNOWN;
+  }
 
-void all2all_memcpy(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
+  int sdtype_size;
+  MPI_Type_size(sdtype, &sdtype_size);
+  int rdtype_size;
+  MPI_Type_size(rdtype, &rdtype_size);
 
-    int rank, size;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &size);
+  size_t s_size = (size_t) sdtype_size * scount;
+  size_t r_size = (size_t) rdtype_size * rcount;
 
-    int datatype_size;
-    MPI_Type_size(sendtype, &datatype_size);
+  if (r_size < s_size) {
+    memcpy(output_buffer, input_buffer, r_size); // Copy as much as possible
+    return MPI_ERR_TRUNCATE;      // Indicate truncation
+  }
 
-    const char* sbuf = static_cast<const char*>(sendbuf);
-    char* rbuf = static_cast<char*>(recvbuf);
+  memcpy(output_buffer, input_buffer, s_size);        // Perform the memory copy
 
-    double mem_time = MPI_Wtime(); 
-    // Copy local data directly (self-send)
-    std::memcpy(rbuf + rank * datatype_size * recvcount,
-                sbuf + rank * datatype_size * sendcount,
-                sendcount * datatype_size);
-
+  return MPI_SUCCESS;
 }
 
-void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
-                     void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) {
-    int rank, size;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &size);
 
-    int datatype_size;
-    MPI_Type_size(sendtype, &datatype_size);
+void allgather_memcpy(const void *sbuf, size_t scount, MPI_Datatype sdtype, void* rbuf, size_t rcount, MPI_Datatype rdtype, MPI_Comm comm){
 
-    const char* sbuf = static_cast<const char*>(sendbuf);
-    char* rbuf = static_cast<char*>(recvbuf);
+  int rank, size, sendto, recvfrom, i, recvdatafrom, senddatafrom;
+  ptrdiff_t rlb, rext;
+  char *tmpsend = NULL, *tmprecv = NULL;
 
-    // double mem_time = MPI_Wtime(); 
-    // // Copy local data directly (self-send)
-    // std::memcpy(rbuf + rank * datatype_size * recvcount,
-    //             sbuf + rank * datatype_size * sendcount,
-    //             sendcount * datatype_size);
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
 
-    // double final_mem_time = MPI_Wtime() - mem_time;
-    // cerr << "MEM: " << final_mem_time << "s" << endl;
-    
-    // double comm_time = MPI_Wtime();
-    std::vector<MPI_Request> requests;
-    for (int i = 0; i < size; ++i) {
-        if (i == rank) continue;
+  MPI_Type_get_extent(rdtype, &rlb, &rext);
 
-        MPI_Request req_recv;
-        MPI_Request req_send;
-
-        MPI_Isend(sbuf + i * datatype_size * sendcount, sendcount, sendtype, i, 0, comm, &req_send);
-        MPI_Irecv(rbuf + i * datatype_size * recvcount, recvcount, recvtype, i, 0, comm, &req_recv);
-        
-        requests.push_back(req_send);
-        requests.push_back(req_recv);
-    }
-
-    MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
-    // double final_comm_time = MPI_Wtime() - comm_time;
-    // cerr << "COMM: " << final_comm_time << "s" << endl;
+  tmprecv = (char*) rbuf + (ptrdiff_t)rank * (ptrdiff_t)rcount * rext;
+  if (MPI_IN_PLACE != sbuf) {
+    tmpsend = (char*) sbuf;
+    copy_buffer_different_dt(tmpsend, scount, sdtype, tmprecv, rcount, rdtype);
+  }
 }
+
+
+void allgather_ring(const void *sbuf, size_t scount, MPI_Datatype sdtype,
+                   void* rbuf, size_t rcount, MPI_Datatype rdtype, MPI_Comm comm) {
+
+  int rank, size, sendto, recvfrom, i, recvdatafrom, senddatafrom;
+  ptrdiff_t rlb, rext;
+  char *tmpsend = NULL, *tmprecv = NULL;
+
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
+
+  MPI_Type_get_extent(rdtype, &rlb, &rext);
+
+  sendto = (rank + 1) % size;
+  recvfrom  = (rank - 1 + size) % size;
+
+  for (i = 0; i < size - 1; i++) {
+
+    recvdatafrom = (rank - i - 1 + size) % size;
+    senddatafrom = (rank - i + size) % size;
+
+    tmprecv = (char*)rbuf + (ptrdiff_t)recvdatafrom * (ptrdiff_t)rcount * rext;
+    tmpsend = (char*)rbuf + (ptrdiff_t)senddatafrom * (ptrdiff_t)rcount * rext;
+
+    MPI_Sendrecv(tmpsend, rcount, rdtype, sendto, 0,
+                       tmprecv, rcount, rdtype, recvfrom, 0,
+                       comm, MPI_STATUS_IGNORE);
+
+  }
+}
+
+/*
+giusto un double check sul calcolo della banda. Supponendo che il parametro bufsize di MPI è N e che la collettiva è runnata su P nodi:
+-per la allreduce la banda è calcolata come 2*N*((P-1)/P) / tempo
+-per la alltoall è calcolata come N*(P-1) / tempo
+-per la allgather come N*((P-1)/P) / tempo
+*/
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -134,11 +155,12 @@ int main(int argc, char *argv[]) {
 
 
     MPI_Barrier(MPI_COMM_WORLD);
-  
+
 
     int BUFFER_SIZE = (size_count * multiplier_type);
-    unsigned char *send_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size); 
-    unsigned char *recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size);
+    int MSG_BUFFER_SIZE = BUFFER_SIZE / size;
+    unsigned char *send_buffer = (unsigned char*) malloc_align(MSG_BUFFER_SIZE);
+    unsigned char *recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE);
     if (send_buffer == NULL || recv_buffer == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -146,19 +168,19 @@ int main(int argc, char *argv[]) {
     }
 
     srand(time(NULL)*rank); 
-    for (int i = 0; i < BUFFER_SIZE*size; i++) {
-        send_buffer[i] = rand()*rank % size; 
+    for (int i = 0; i < MSG_BUFFER_SIZE; i++) {
+        send_buffer[i] = (int) (rand()*rank % 10);
     }
 
     // TESTING THE COLLECTIVE
  
     unsigned char *t_recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE*size);
-    all2all_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
-    custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+    allgather_memcpy(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+    allgather_ring(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
 
-    MPI_Alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, t_recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+    MPI_Allgather(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, t_recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
 
-    if(VerifyCollective(recv_buffer, t_recv_buffer, BUFFER_SIZE*size, rank) == -1){
+    if(VerifyCollective(recv_buffer, t_recv_buffer, BUFFER_SIZE, rank) == -1){
       cerr << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;
       return EXIT_FAILURE;
     } else {
@@ -172,11 +194,11 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
-        all2all_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+        allgather_memcpy(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+        allgather_ring(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

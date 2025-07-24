@@ -62,7 +62,7 @@ if [ "$1" == "nanjing" ]; then
 
     echo "Congestion Noise Started!"
 
-    for BENCH in all2all allgather allreduce reducescatter
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
@@ -81,7 +81,7 @@ if [ "$1" == "nanjing" ]; then
     wait $noise_pid 2>/dev/null
     echo "Killed noise (PID $noise_pid), starting benchmarking without congestion..."
 
-    for BENCH in all2all allgather allreduce reducescatter
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
@@ -107,7 +107,7 @@ else
 
     echo "Congestion Noise Started!"
 
-    for BENCH in pingpong all2all allgather allreduce reducescatter 
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter 
     do
         echo $BENCH
         srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
@@ -126,7 +126,7 @@ else
     wait $noise_pid 2>/dev/null
     echo "Killed noise (PID $noise_pid), starting benchmarking without congestion..."
 
-    for BENCH in pingpong all2all allgather allreduce reducescatter 
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter 
     do
         echo $BENCH
         srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

@@ -57,7 +57,7 @@ mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
 if [ "$1" == "nanjing" ]; then
 
-    mpirun mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group1 ./build/noise_all2all &
+    mpirun mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group1 ./build/noise_incast &
     noise_pid=$!
 
     echo "Congestion Noise Started!"
@@ -102,7 +102,7 @@ else
     echo "Group 1 nodes: $group1"
     echo "Group 2 nodes: $group2"
 
-    srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --cpus-per-task=1 --nodelist=$group1 ./build/noise_all2all &
+    srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --cpus-per-task=1 --nodelist=$group1 ./build/noise_incast &
     noise_pid=$!
 
     echo "Congestion Noise Started!"

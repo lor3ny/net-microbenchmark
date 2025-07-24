@@ -28,7 +28,7 @@ def DrawLinePlot(data, name):
     # Lineplot con stile e markers
     sns.lineplot(
         data=df,
-        x='message',
+        x='Message',
         y='bandwidth',
         hue='cluster_collective',
         style='cluster_collective',
@@ -142,8 +142,8 @@ def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False):
         for file_name in os.listdir(path):
             file_path = os.path.join(path, file_name)
 
-            if cong == False and len(file_name.strip().split("_")) == 3:
-                continue
+            # if cong == False and len(file_name.strip().split("_")) == 3:
+            #     continue
 
             if cong == True and len(file_name.strip().split("_")) == 2:
                 continue
@@ -217,16 +217,11 @@ if __name__ == "__main__":
 
 
     messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
-    collectives = ["all2all", "allgather", "reducescatter", "allreduce", "pointpoint"]
+    collectives = ["all2all_raw", "allgather_raw", "all2all", "allgather", "reducescatter", "allreduce", "pointpoint"]
 
 
-    folder_nanjing = f"data/nanjing/4"
-    folder_haicgu = f"data/haicgu-eth-1000/4"
-
-    data = LoadData(data, "HAICGU", 4 , folder_haicgu, messages=['128 MiB'], cong=False, coll="allgather")
-    data = LoadData(data, "Nanjing", 4 , folder_nanjing, messages=['128 MiB'], cong=False, coll="allgather")
-    DrawScatterPlot(data, f"Nanjing vs HAICGU 4 Nodes All-Gather")
-    CleanData(data)
+    folder_nanjing = f"data/nanjing/{nodes}"
+    folder_haicgu = f"data/haicgu-eth/{nodes}"
 
     # for coll in collectives:
     #     for mess in messages:  
@@ -235,8 +230,8 @@ if __name__ == "__main__":
     #         DrawScatterPlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll} {mess}")
     #         CleanData(data)
 
-    # for coll in collectives:
-    #     data = LoadData(data, "HAICGU", nodes , folder_haicgu, messages=messages, cong=False, coll=coll)
-    #     data = LoadData(data, "Nanjing", nodes , folder_nanjing, messages=messages, cong=False, coll=coll)
-    #     DrawLinePlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll}")
-    #     CleanData(data)
+    for coll in collectives:
+        data = LoadData(data, "HAICGU", nodes , folder_haicgu, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, "Nanjing", nodes , folder_nanjing, messages=messages, cong=False, coll=coll)
+        DrawLinePlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll}")
+        CleanData(data)

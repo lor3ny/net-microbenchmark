@@ -217,11 +217,11 @@ if __name__ == "__main__":
 
 
     messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
-    collectives = ["all2all_raw", "allgather_raw", "all2all", "allgather", "reducescatter", "allreduce", "pointpoint"]
+    collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
 
-    folder_nanjing = f"data/nanjing/{nodes}"
-    folder_haicgu = f"data/haicgu-eth/{nodes}"
+    folder_1 = f"data/nanjing/CONG_A2A/{nodes}"
+    folder_2 = f"data/nanjing/enabled_CONG_A2A/{nodes}"
 
     # for coll in collectives:
     #     for mess in messages:  
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     #         CleanData(data)
 
     for coll in collectives:
-        data = LoadData(data, "HAICGU", nodes , folder_haicgu, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, "Nanjing", nodes , folder_nanjing, messages=messages, cong=False, coll=coll)
-        DrawLinePlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll}")
+        data = LoadData(data, "Nanjing without AI-ECN", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, "Nanjing with AI-ECN", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        DrawLinePlot(data, f"Nanjing AI-ECN with All-to-All Congestion Comparison {nodes} Nodes {coll}")
         CleanData(data)

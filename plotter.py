@@ -220,7 +220,7 @@ if __name__ == "__main__":
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
 
-    folder_1 = f"data/nanjing/CONG_A2A/{nodes}"
+    folder_1 = f"data/nanjing/{nodes}"
     folder_2 = f"data/nanjing/enabled_CONG_A2A/{nodes}"
 
     # for coll in collectives:
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     #         CleanData(data)
 
     for coll in collectives:
-        data = LoadData(data, "Nanjing without AI-ECN", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, "Nanjing with AI-ECN", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot(data, f"Nanjing AI-ECN with All-to-All Congestion Comparison {nodes} Nodes {coll}")
+        data = LoadData(data, "Nanjing without Congestion", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, "All-to-All Congested Nanjing with AI-ECN", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        DrawLinePlot(data, f"Nanjing AI-ECN with Congestion Comparison {nodes} Nodes {coll}")
         CleanData(data)

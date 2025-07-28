@@ -66,6 +66,8 @@ if [ "$1" == "nanjing" ]; then
         echo "Congestion Noise Started!"
     fi
 
+    sleep 3
+
     for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
@@ -80,10 +82,14 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 128 MiB 100 10 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_cong.csv
     done
 
+    sleep 3
+
     echo "Benchmarking with congestion done, killing noise traffic (PID $noise_pid)..."
     kill $noise_pid
     wait $noise_pid 2>/dev/null
     echo "Killed noise (PID $noise_pid), starting benchmarking without congestion..."
+
+    sleep 3
 
     for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do

@@ -53,9 +53,9 @@ void custom_alltoall(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
-    int world_size, world_rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    int size, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     const int BUFFER_SIZE = 16 * 1024 * 1024;  // bytes per peer 16MiB
 
@@ -66,6 +66,11 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Memory allocation failed!\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
         return -1;
+    }
+
+    srand(time(NULL)*rank); 
+    for (int i = 0; i < BUFFER_SIZE*size; i++) {
+        send_buffer[i] = rand()*rank % size; 
     }
 
     while (1) {

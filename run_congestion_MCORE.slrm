@@ -59,14 +59,18 @@ if [ "$1" == "nanjing" ]; then
 
     mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group1 ./build/noise_all2all &
     noise_pid=$!
-
-    echo "Congestion Noise Started!"
+    if ! ps -p $noise_pid > /dev/null; then
+        echo "Error: Noise process failed to start."
+        exit 1
+    else 
+        echo "Congestion Noise Started!"
+    fi
 
     for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/62_${BENCH}_cong.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}_cong.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}_cong.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}_cong.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}_cong.csv
@@ -85,7 +89,7 @@ if [ "$1" == "nanjing" ]; then
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/62_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv

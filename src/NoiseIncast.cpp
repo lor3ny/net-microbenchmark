@@ -3,42 +3,44 @@
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
-    int world_size, world_rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    int size, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    const int small_buf_size = 2 * 1024 * 1024;  // bytes
+    const int BUFFER_SIZE = 2 * 1024 * 1024;  // 2 MiB buffers
 
-    std::vector<char> buffer(small_buf_size, world_rank);
+    unsigned char *buffer = (unsigned char*) malloc_align(BUFFER_SIZE); 
+    if (buffer == NULL) {
+        std::cerr << "Memory allocation failed!" << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return -1;
+    }
+
+    srand(time(NULL)*rank); 
+    for (int i = 0; i < BUFFER_SIZE*size; i++) {
+        buffer[i] = rand()*rank % size; 
+    }
+
     std::vector<MPI_Request> requests;
 
     while (1) {
         requests.clear();
 
-        if (world_rank == 0) {
+        if (rank == 0) {
 
-            for (int sender = 1; sender < world_size; ++sender) {
+            for (int sender = 1; sender < size; ++sender) {
                 MPI_Request req;
-                MPI_Irecv(buffer.data(), small_buf_size, MPI_CHAR, sender, 0, MPI_COMM_WORLD, &req);
+                MPI_Irecv(buffer, BUFFER_SIZE, MPI_BYTE, sender, 0, MPI_COMM_WORLD, &req);
                 requests.push_back(req);
             }
 
         } else {
             MPI_Request req;
-            MPI_Isend(buffer.data(), small_buf_size, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &req);
+            MPI_Isend(buffer, BUFFER_SIZE, MPI_BYTE, 0, 0, MPI_COMM_WORLD, &req);
             requests.push_back(req);
         }
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-
-        // if (world_rank == 0){
-        //     for(j=0;j<w_size-1;j++){
-        //         MPI_Recv(&recv_buf[j*msg_size],recv_buf_size,MPI_BYTE, MPI_ANY_SOURCE
-        //                 ,MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        //     }
-        // }else{
-        //     MPI_Send(send_buf,msg_size,MPI_BYTE,master_rank,my_rank,MPI_COMM_WORLD);
-        // }
     }
 
     MPI_Finalize();

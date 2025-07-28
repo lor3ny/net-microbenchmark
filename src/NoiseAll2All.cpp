@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
         MPI_Alltoall(send_buf.data(), small_buf_size, MPI_CHAR,
                      recv_buf.data(), small_buf_size, MPI_CHAR,
                      MPI_COMM_WORLD);
-        cerr << "Done." << endl;
+        std::cerr << "Done." << std::endl;
     }
 
     MPI_Finalize();

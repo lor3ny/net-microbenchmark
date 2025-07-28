@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     }
 
     srand(time(NULL)*rank); 
-    for (int i = 0; i < BUFFER_SIZE*size; i++) {
+    for (int i = 0; i < BUFFER_SIZE; i++) {
         buffer[i] = rand()*rank % size; 
     }
 

@@ -7,8 +7,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    const int small_buf_size = 16 * 1024;  // bytes
-    const int iterations = 10000;   // optional: number of rounds
+    const int small_buf_size = 2 * 1024 * 1024;  // bytes
 
     std::vector<char> buffer(small_buf_size, world_rank);
     std::vector<MPI_Request> requests;

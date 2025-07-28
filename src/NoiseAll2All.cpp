@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
     }
 
     while (1) {
-        all2all_memcpy(send_buffer.data(), BUFFER_SIZE, MPI_BYTE, recv_buffer.data(), BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
-        custom_alltoall(send_buffer.datta(), BUFFER_SIZE, MPI_BYTE, recv_buffer.data(), BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+        all2all_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+        custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
     }
 
     MPI_Finalize();

@@ -29,7 +29,7 @@ static inline int copy_buffer(const void *input_buffer, void *output_buffer,
   return MPI_SUCCESS;
 }
 
-int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,
+int allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,
                    MPI_Op op, MPI_Comm comm)
 {
   int ret, line, rank, size, k, recv_from, send_to, block_count, inbi;
@@ -78,7 +78,21 @@ int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtyp
   if (MPI_IN_PLACE != sbuf) {
     ret = copy_buffer((char *)sbuf, (char *) rbuf, count, dtype);
   }
+}
 
+int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,
+                   MPI_Op op, MPI_Comm comm)
+{
+  int ret, line, rank, size, k, recv_from, send_to, block_count, inbi;
+  int early_segcount, late_segcount, split_rank, max_segcount;
+  char *tmpsend = NULL, *tmprecv = NULL, *inbuf[2] = {NULL, NULL};
+  ptrdiff_t true_lb, true_extent, lb, extent;
+  ptrdiff_t block_offset, max_real_segsize;
+  MPI_Request reqs[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
+
+  ret = MPI_Comm_size(comm, &size);
+  ret = MPI_Comm_rank(comm, &rank);
+  
   /* Computation loop */
 
   /*

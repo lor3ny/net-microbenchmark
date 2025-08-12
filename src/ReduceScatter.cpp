@@ -43,11 +43,10 @@ static inline ptrdiff_t datatype_span(MPI_Datatype dtype, size_t count, ptrdiff_
 
     return true_extent + extent * (count - 1);  // Calculate the total memory span
 }
-  
-  
-double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
+
+int reduce_scatter_memory_1( const void *sbuf, void *rbuf, const int rcounts[],
     MPI_Datatype dtype, MPI_Op op, MPI_Comm comm)
-{
+{ 
     int ret, line, rank, size, i, k, recv_from, send_to;
     int inbi;
     size_t total_count, max_block_count;
@@ -110,7 +109,22 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     }
 
     ret = copy_buffer((char*) sbuf, accumbuf, total_count, dtype);
+}
+  
+int reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
+    MPI_Datatype dtype, MPI_Op op, MPI_Comm comm)
+{
+    int ret, line, rank, size, i, k, recv_from, send_to;
+    int inbi;
+    size_t total_count, max_block_count;
+    ptrdiff_t *displs = NULL;
+    char *tmpsend = NULL, *tmprecv = NULL, *accumbuf = NULL, *accumbuf_free = NULL;
+    char *inbuf_free[2] = {NULL, NULL}, *inbuf[2] = {NULL, NULL};
+    ptrdiff_t extent, lb, max_real_segsize, dsize, gap = 0;
+    MPI_Request reqs[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
 
+    ret = MPI_Comm_size(comm, &size);
+    ret = MPI_Comm_rank(comm, &rank);
 
     /* Computation loop */
 
@@ -177,9 +191,8 @@ double reduce_scatter_ring( const void *sbuf, void *rbuf, const int rcounts[],
     if(NULL != inbuf_free[0]) free(inbuf_free[0]);
     if(NULL != inbuf_free[1]) free(inbuf_free[1]);
 
-    return total_time;
+    return MPI_SUCCESS;
 }
-
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -262,8 +275,9 @@ int main(int argc, char *argv[]) {
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        //reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Reduce_scatter(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        reduce_scatter_memory(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        reduce_scatter_ring(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        //MPI_Reduce_scatter(send_buffer, recv_buffer, recvcounts, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

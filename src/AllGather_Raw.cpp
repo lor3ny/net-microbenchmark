@@ -195,8 +195,8 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
         double start_time, end_time;
-        start_time = MPI_Wtime();
         allgather_memcpy(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+        start_time = MPI_Wtime();
         allgather_ring(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 

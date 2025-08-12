@@ -194,10 +194,9 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
-        allgather_memcpy(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
-
         double start_time, end_time;
         start_time = MPI_Wtime();
+        allgather_memcpy(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
         allgather_ring(send_buffer, MSG_BUFFER_SIZE, MPI_BYTE, recv_buffer, MSG_BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 

@@ -322,9 +322,9 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < BENCHMARK_ITERATIONS + WARM_UP; ++i){
 
         double start_time, end_time;
-        allreduce_memory(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         start_time = MPI_Wtime();
-        allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        allreduce_memory(send_buffer, recv_buffer, msg_count, MPI_INT, noop_op, MPI_COMM_WORLD);
+        allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_INT, noop_op, MPI_COMM_WORLD);
         //MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 

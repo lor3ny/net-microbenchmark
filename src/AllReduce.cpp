@@ -299,7 +299,7 @@ int main(int argc, char *argv[]) {
 
     // TESTING THE COLLECTIVE
  
-    unsigned char *t_recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE);
+    int *t_recv_buffer = (int*) malloc_align(BUFFER_SIZE);
     allreduce_memory(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 

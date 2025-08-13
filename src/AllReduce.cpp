@@ -56,7 +56,6 @@ int allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dt
   ret = MPI_Comm_size(comm, &size);
   ret = MPI_Comm_rank(comm, &rank);
 
-
   /* Special case for size == 1 */
   if (1 == size) {
     if (MPI_IN_PLACE != sbuf) {
@@ -302,7 +301,7 @@ int main(int argc, char *argv[]) {
     allreduce_memory(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     allreduce_ring(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
-    MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(send_buffer, t_recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
     if(VerifyCollective(recv_buffer, t_recv_buffer, msg_count, rank) == -1){
       cerr << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;

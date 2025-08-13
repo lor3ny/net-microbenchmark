@@ -312,6 +312,10 @@ int main(int argc, char *argv[]) {
 
     // TESTING THE COLLECTIVE
 
+    // Defining a new reduction
+    MPI_Op noop_op;
+    MPI_Op_create((MPI_User_function *)noop, 1, &noop_op);
+
     double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);

@@ -65,6 +65,26 @@ int allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dt
     return MPI_SUCCESS;
   }
 
+  /* Handle MPI_IN_PLACE */
+  if (MPI_IN_PLACE != sbuf) {
+    ret = copy_buffer((char *)sbuf, (char *) rbuf, count, dtype);
+  }
+
+  return MPI_SUCCESS;
+}
+
+int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,
+                   MPI_Op op, MPI_Comm comm)
+{
+  int ret, line, rank, size, k, recv_from, send_to, block_count, inbi;
+  int early_segcount, late_segcount, split_rank, max_segcount;
+  char *tmpsend = NULL, *tmprecv = NULL, *inbuf[2] = {NULL, NULL};
+  ptrdiff_t true_lb, true_extent, lb, extent;
+  ptrdiff_t block_offset, max_real_segsize;
+  MPI_Request reqs[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
+
+  ret = MPI_Comm_size(comm, &size);
+  ret = MPI_Comm_rank(comm, &rank);
 
   /* Allocate and initialize temporary buffers */
   ret = MPI_Type_get_extent(dtype, &lb, &extent);
@@ -87,27 +107,6 @@ int allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dt
   if (size > 2) {
     inbuf[1] = (char*)malloc(max_real_segsize);
   }
-
-  /* Handle MPI_IN_PLACE */
-  if (MPI_IN_PLACE != sbuf) {
-    ret = copy_buffer((char *)sbuf, (char *) rbuf, count, dtype);
-  }
-
-  return MPI_SUCCESS;
-}
-
-int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,
-                   MPI_Op op, MPI_Comm comm)
-{
-  int ret, line, rank, size, k, recv_from, send_to, block_count, inbi;
-  int early_segcount, late_segcount, split_rank, max_segcount;
-  char *tmpsend = NULL, *tmprecv = NULL, *inbuf[2] = {NULL, NULL};
-  ptrdiff_t true_lb, true_extent, lb, extent;
-  ptrdiff_t block_offset, max_real_segsize;
-  MPI_Request reqs[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
-
-  ret = MPI_Comm_size(comm, &size);
-  ret = MPI_Comm_rank(comm, &rank);
 
   /* Computation loop */
 

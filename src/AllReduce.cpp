@@ -12,6 +12,20 @@ using namespace std;
         EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
     }
 
+int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int rank){
+  int incorrect = 0;
+  for(int i = 0; i<dim; ++i){
+    try {
+      if(buf_a[i] != buf_b[i]){
+        incorrect = -1;
+      }
+    } catch (const invalid_argument& e) {
+        cerr << "ERROR: Memory corruption on verification." << endl;
+        return EXIT_FAILURE;
+    }
+  }
+  return incorrect;
+}
 
 static inline int copy_buffer(const void *input_buffer, void *output_buffer,
                               size_t count, const MPI_Datatype datatype) {
@@ -92,7 +106,7 @@ int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtyp
 
   ret = MPI_Comm_size(comm, &size);
   ret = MPI_Comm_rank(comm, &rank);
-  
+
   /* Computation loop */
 
   /*
@@ -281,6 +295,23 @@ int main(int argc, char *argv[]) {
         send_buffer[i] = (int) (rand()*rank % 10);
     }
 
+    // TESTING THE COLLECTIVE
+ 
+    unsigned char *t_recv_buffer = (unsigned char*) malloc_align(BUFFER_SIZE);
+    allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype, MPI_Op op, MPI_Comm comm);
+    allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype, MPI_Op op, MPI_Comm comm);
+
+    MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+    if(VerifyCollective(recv_buffer, t_recv_buffer, BUFFER_SIZE, rank) == -1){
+      cerr << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;
+      return EXIT_FAILURE;
+    } else {
+      cerr << "Test passed!" << endl;
+    }
+
+    // TESTING THE COLLECTIVE
+
     double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -288,7 +319,9 @@ int main(int argc, char *argv[]) {
 
         double start_time, end_time;
         start_time = MPI_Wtime();
-        MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype, MPI_Op op, MPI_Comm comm);
+        allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype, MPI_Op op, MPI_Comm comm);
+        //MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         end_time = MPI_Wtime();
 
         if(i>WARM_UP) {

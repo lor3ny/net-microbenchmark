@@ -33,12 +33,8 @@ fi
 if [ "$1" == "leonardo" ]; then
     module purge 
     module load openmpi
-    if [ -n "${UCX_IB_SL}" ]; then 
-        export UCX_IB_SL=${UCX_IB_SL}
-    else
-        export UCX_IB_SL=1
-    fi
-    export UCX_PROTO_ENABLE=y
+    export UCX_IB_SL=1
+    #export UCX_PROTO_ENABLE=y
     #export UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1 # This is to force the uss of only one port (100Gb/s)
     PROCS=$SLURM_NTASKS
     echo $PROCS
@@ -58,8 +54,6 @@ fi
 #export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
 
 #export OMPI_MCA_btl_openib_eager_limit=16777216 # 16 MiB
-
-#ompi_info --param btl openib | grep eager_limit
 
 TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 
@@ -84,7 +78,7 @@ if [ "$1" == "nanjing" ]; then
         mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
     done
 else
-    for BENCH in all2all_raw allgather_raw #allreduce reducescatter 
+    for BENCH in allreduce #all2all_raw reducescatter allgather_raw 
     do
         echo $BENCH
         srun ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

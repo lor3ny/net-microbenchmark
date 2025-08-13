@@ -92,6 +92,8 @@ int allreduce_memory(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dt
   if (MPI_IN_PLACE != sbuf) {
     ret = copy_buffer((char *)sbuf, (char *) rbuf, count, dtype);
   }
+
+  return MPI_SUCCESS;
 }
 
 int allreduce_ring(const void *sbuf, void *rbuf, size_t count, MPI_Datatype dtype,

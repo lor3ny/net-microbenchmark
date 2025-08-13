@@ -12,7 +12,7 @@ using namespace std;
         EARLY_BLOCK_COUNT = EARLY_BLOCK_COUNT + 1;                           \
     }
 
-int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int rank){
+int VerifyCollective(int* buf_a, int* buf_b, int dim, int rank){
   int incorrect = 0;
   for(int i = 0; i<dim; ++i){
     try {
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
 
     MPI_Allreduce(send_buffer, recv_buffer, msg_count, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
-    if(VerifyCollective(recv_buffer, t_recv_buffer, BUFFER_SIZE, rank) == -1){
+    if(VerifyCollective(recv_buffer, t_recv_buffer, msg_count, rank) == -1){
       cerr << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;
       return EXIT_FAILURE;
     } else {

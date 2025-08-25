@@ -16,36 +16,36 @@ def DrawLinePlot(data, name):
     sns.set_context("talk")
 
     # Crea figura
-    f, ax1 = plt.subplots(figsize=(20, 10))
+    f, ax1 = plt.subplots(figsize=(30, 15))
 
     # Conversione dati in DataFrame
     df = pd.DataFrame(data)
-    df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
+    #df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
 
     # Palette migliorata
-    palette = sns.color_palette("Set2", n_colors=df['cluster_collective'].nunique())
+    palette = sns.color_palette("Set2", n_colors=df['Cluster'].nunique())
 
     # Lineplot con stile e markers
     sns.lineplot(
         data=df,
         x='Message',
         y='bandwidth',
-        hue='cluster_collective',
-        style='cluster_collective',
+        hue='Cluster',
+        style='Cluster',
         markers=True,
         markersize=10,
-        linewidth=3,
+        linewidth=5,
         ax=ax1,
         palette=palette
     )
 
     # Linea teorica
     ax1.axhline(
-        y=100,
+        y=200,
         color='red',
         linestyle='--',
         linewidth=2,
-        label=f'Theoretical Peak {100} Gb/s'
+        label=f'Theoretical Peak {200} Gb/s'
     )
 
     # Etichette
@@ -74,12 +74,12 @@ def DrawScatterPlot(data, name):
     sns.set_context("talk")
 
     # Create the figure and axes
-    f, ax1 = plt.subplots(figsize=(20, 10))
+    f, ax1 = plt.subplots(figsize=(30, 17))
     
     # Convert input data to a DataFrame
     df = pd.DataFrame(data)
-    df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
-    palette = sns.color_palette("Set2", n_colors=df['cluster_collective'].nunique())
+    #df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
+    palette = sns.color_palette("Set2", n_colors=df['Cluster'].nunique())
 
     # Plot with seaborn
     fig = sns.scatterplot(
@@ -92,6 +92,14 @@ def DrawScatterPlot(data, name):
         ax=ax1,
         alpha=0.9,
         palette=palette
+    )
+
+    ax1.axhline(
+        y=200,
+        color='red',
+        linestyle='--',
+        linewidth=2,
+        label=f'Theoretical Peak {200} Gb/s'
     )
 
     # Labeling and formatting
@@ -107,7 +115,7 @@ def DrawScatterPlot(data, name):
         fontsize=25,           # grandezza testo etichette
         loc='upper center',
         bbox_to_anchor=(0.5, -0.2),  # più spazio sotto
-        ncol=5,
+        ncol=3,
         frameon=True,
         title=None,
         markerscale=2.0        # ingrandisce i marker nella legenda
@@ -121,7 +129,7 @@ def DrawScatterPlot(data, name):
 
 def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False):
 
-    print (f"Loading data from {path}")
+    print (f"Loading data from {path} with cong={cong} and coll={coll}")
 
     for msg in messages:
         msg_mult = msg.strip().split(' ')[1]
@@ -142,10 +150,12 @@ def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False):
         for file_name in os.listdir(path):
             file_path = os.path.join(path, file_name)
 
-            # if cong == False and len(file_name.strip().split("_")) == 3:
-            #     continue
+            file_name = file_name.strip().split(".")[0]
+            file_name_parts = file_name.split("_")
 
-            if cong == True and len(file_name.strip().split("_")) == 2:
+            if "cong" in file_name_parts and cong == False:
+                continue
+            if "cong" not in file_name_parts and cong == True:
                 continue
 
             found_message_bytes = int(file_name.strip().split("_")[0])
@@ -213,25 +223,40 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         nodes = int(sys.argv[1])
     else:
-        nodes = 8
+        print("ERROR: missing number of nodes as argument")
+        sys.exit(1)
 
 
     messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    messages_scatter = ['16 MiB', '128 MiB']
+    
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
-
-    folder_1 = f"data/nanjing/{nodes}"
-    folder_2 = f"data/nanjing/enabled_CONG_A2A/{nodes}"
-
-    # for coll in collectives:
-    #     for mess in messages:  
-    #         data = LoadData(data, "HAICGU", nodes , folder_haicgu, [mess], cong=False, coll=coll)
-    #         data = LoadData(data, "Nanjing", nodes , folder_nanjing, [mess], cong=False, coll=coll)
-    #         DrawScatterPlot(data, f"Nanjing vs HAICGU {nodes} Nodes {coll} {mess}")
-    #         CleanData(data)
+    folder_1 = f"data/nanjing/all2all_yes_NSLB"
+    folder_2 = f"data/nanjing/all2all_no_NSLB"
 
     for coll in collectives:
-        data = LoadData(data, "Nanjing without Congestion", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, "All-to-All Congested Nanjing with AI-ECN", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot(data, f"Nanjing AI-ECN with Congestion Comparison {nodes} Nodes {coll}")
+        if coll == "all2all":
+            coll_name = "All-to-All"
+        elif coll == "allgather":
+            coll_name = "All-Gather"
+
+        data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=False, coll=coll)
+        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=False, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=True, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=True, coll=coll)
+        DrawScatterPlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
+        CleanData(data)
+
+    for coll in collectives:
+        if coll == "all2all":
+            coll_name = "All-to-All"
+        elif coll == "allgather":
+            coll_name = "All-Gather"
+
+        data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
+        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
         CleanData(data)

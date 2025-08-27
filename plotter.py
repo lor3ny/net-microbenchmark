@@ -6,6 +6,8 @@ import os
 import glob
 import sys
 
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from matplotlib.ticker import ScalarFormatter
 
 
 def DrawLinePlot(data, name):
@@ -15,17 +17,16 @@ def DrawLinePlot(data, name):
     sns.set_style("whitegrid")
     sns.set_context("talk")
 
-    # Crea figura
+    # Crea figura principale
     f, ax1 = plt.subplots(figsize=(30, 15))
 
     # Conversione dati in DataFrame
     df = pd.DataFrame(data)
-    #df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
 
     # Palette migliorata
     palette = sns.color_palette("Set2", n_colors=df['Cluster'].nunique())
 
-    # Lineplot con stile e markers
+    # --- Lineplot principale ---
     sns.lineplot(
         data=df,
         x='Message',
@@ -34,7 +35,7 @@ def DrawLinePlot(data, name):
         style='Cluster',
         markers=True,
         markersize=10,
-        linewidth=5,
+        linewidth=7,
         ax=ax1,
         palette=palette
     )
@@ -44,25 +45,137 @@ def DrawLinePlot(data, name):
         y=200,
         color='red',
         linestyle='--',
-        linewidth=2,
+        linewidth=6,
         label=f'Theoretical Peak {200} Gb/s'
     )
 
     # Etichette
+    ax1.set_xlim(0, len(df["Message"].unique()) - 1)
+    ax1.tick_params(axis='both', which='major', labelsize=23)
+    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=28, labelpad=23)
+    ax1.set_xlabel('Message Size', fontsize=28, labelpad=23)
+    ax1.set_title(f'{name}', fontsize=38, pad=30)
+
+    # Legenda centrata in basso
+    ax1.legend(
+        fontsize=23,
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=3,
+        frameon=True
+    )
+
+    # --- Subplot zoom-in ---
+    zoom_msgs = ['8 B', '64 B', '512 B']
+    df_zoom = df[df['Message'].isin(zoom_msgs)]
+
+    axins = inset_axes(ax1, width="45%", height="45%", loc='upper left',
+                       borderpad=7)
+
+    sns.lineplot(
+        data=df_zoom,
+        x='Message',
+        y='latency',
+        hue='Cluster',
+        style='Cluster',
+        markers=True,
+        markersize=8,
+        linewidth=7,
+        ax=axins,
+        palette=palette,
+        legend=False  # no legend in zoom
+    )
+
+    # Optional: adjust ticks for zoom clarity
+    axins.set_xlim(0, len(df_zoom["Message"].unique()) - 1)
+    axins.tick_params(axis='both', which='major', labelsize=23)
+    axins.set_title("")
+    axins.set_xlabel('', fontsize=28, labelpad=23)
+    axins.set_ylabel('Latency (us)', fontsize=28, labelpad=23)
+
+    # --- Layout e salvataggio ---
+    #plt.tight_layout()
+    plt.savefig(f'plots/{name}_line.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+
+def DrawViolinPlot(data, name):
+    print(f"Plotting barplot with raw data: {name}")
+
+    # Stile e contesto
+    sns.set_style("whitegrid")
+    sns.set_context("talk")
+
+    # Crea figura
+    f, ax1 = plt.subplots(figsize=(30, 15))
+
+    # Conversione dati in DataFrame
+    df = pd.DataFrame(data)
+
+    # Palette migliorata
+    palette = sns.color_palette("Set2", n_colors=df['Cluster'].nunique())
+    palette_desat = [sns.desaturate(c, 0.7) for c in palette]
+
+    sns.lineplot(
+        data=df,
+        x='Message',
+        y='bandwidth',
+        hue='Cluster',
+        style='Cluster',
+        markers=True,
+        markersize=10,
+        linewidth=7,
+        ax=ax1,
+        palette=palette
+    )
+
+    # --- Barplot senza errorbar ---
+    sns.barplot(
+        data=df,
+        x="Message",
+        y="bandwidth",
+        hue="Cluster",
+        errorbar='sd',    # no error bars
+        palette=palette_desat,
+        ax=ax1
+    )
+
+    # Scala logaritmica
+    ax1.set_yscale('log')
+
+    # Etichette
     ax1.tick_params(axis='both', which='major', labelsize=18)
-    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=28, labelpad=20)
+    ax1.set_ylabel('Bandwidth (Gb/s, log scale)', fontsize=28, labelpad=20)
     ax1.set_xlabel('Message Size', fontsize=28, labelpad=20)
     ax1.set_title(f'{name}', fontsize=38, pad=30)
 
     # Legenda centrata in basso fuori dal grafico
-    ax1.legend(fontsize=18, loc='upper center', bbox_to_anchor=(0.5, -0.15),
-               ncol=3, frameon=True)
+    ax1.legend(
+        fontsize=18,
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=3,
+        frameon=True
+    )
 
     plt.tight_layout()
 
     # Salvataggio figura
-    plt.savefig(f'plots/{name}_line.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'plots/{name}_violin.png', dpi=300, bbox_inches='tight')
     plt.close()
+    sns.lineplot(
+        data=df,
+        x='Message',
+        y='bandwidth',
+        hue='Cluster',
+        style='Cluster',
+        markers=True,
+        markersize=10,
+        linewidth=7,
+        ax=ax1,
+        palette=palette
+    )
 
 
 
@@ -228,6 +341,8 @@ if __name__ == "__main__":
 
 
     messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    small_messages = ['8 B', '64 B', '512 B', '4 KiB',]
+    big_messages = ['32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
     messages_scatter = ['16 MiB', '128 MiB']
     
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
@@ -260,3 +375,30 @@ if __name__ == "__main__":
         data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
         DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
         CleanData(data)
+
+
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
+
+    #     data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=small_messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=small_messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=small_messages, cong=True, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=small_messages, cong=True, coll=coll)
+    #     DrawViolinPlot(data, f"SMALL {coll_name} NLSB Analysis with All-to-All Congestion")
+    #     CleanData(data)
+
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
+
+    #     data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=big_messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=big_messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=big_messages, cong=True, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=big_messages, cong=True, coll=coll)
+    #     DrawViolinPlot(data, f"BIG {coll_name} NLSB Analysis with All-to-All Congestion")
+    #     CleanData(data)

@@ -5,8 +5,10 @@
 #SBATCH --nodes=8
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
-#SBATCH --partition=boost_usr_prod
-#SBATCH --account=IscrB_SWING
+#SBATCH --partition=cn-eth
+#SBATCH --account=dcn
+#SBATCH --reservation=dcn_5
+#SBATCH --exclude=cn19
 #SBATCH --exclusive
 
 #account haicgu,leonardo = dcn, IscrB_SWING

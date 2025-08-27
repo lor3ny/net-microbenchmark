@@ -18,7 +18,7 @@ def DrawLinePlot(data, name):
     sns.set_context("talk")
 
     # Crea figura principale
-    f, ax1 = plt.subplots(figsize=(30, 15))
+    f, ax1 = plt.subplots(figsize=(30, 10))
 
     # Conversione dati in DataFrame
     df = pd.DataFrame(data)
@@ -44,32 +44,24 @@ def DrawLinePlot(data, name):
     ax1.axhline(
         y=200,
         color='red',
-        linestyle='--',
-        linewidth=6,
-        label=f'Nanjing Theoretical Peak {200} Gb/s'
-    )
-
-    ax1.axhline(
-        y=100,
-        color='red',
         linestyle=':',
         linewidth=6,
-        label=f'HAICGU Theoretical Peak {100} Gb/s'
+        label=f'Theoretical Peak {200} Gb/s'
     )
 
     # Etichette
     ax1.set_xlim(0, len(df["Message"].unique()) - 1)
-    ax1.tick_params(axis='both', which='major', labelsize=23)
-    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=28, labelpad=23)
-    ax1.set_xlabel('Message Size', fontsize=28, labelpad=23)
-    ax1.set_title(f'{name}', fontsize=38, pad=30)
+    ax1.tick_params(axis='both', which='major', labelsize=30)
+    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=30, labelpad=23)
+    ax1.set_xlabel('Message Size', fontsize=30, labelpad=23)
+    #ax1.set_title(f'{name}', fontsize=38, pad=30)
 
     # Legenda centrata in basso
     ax1.legend(
-        fontsize=28,
+        fontsize=30,
         loc='upper center',
         bbox_to_anchor=(0.5, -0.15),
-        ncol=4,
+        ncol=2,
         frameon=True
     )
 
@@ -77,13 +69,14 @@ def DrawLinePlot(data, name):
     zoom_msgs = ['8 B', '64 B', '512 B', '4 KiB']
     df_zoom = df[df['Message'].isin(zoom_msgs)]
 
-    axins = inset_axes(ax1, width="45%", height="45%", loc='upper left',
-                       borderpad=7)
+    axins = inset_axes(ax1, width="43%", height="43%", loc='upper left', borderpad=7)
+
+    df_zoom['latency_scaled'] = df_zoom['latency'] * 1e6
 
     sns.lineplot(
         data=df_zoom,
         x='Message',
-        y='latency',
+        y='latency_scaled',
         hue='Cluster',
         style='Cluster',
         markers=True,
@@ -94,9 +87,12 @@ def DrawLinePlot(data, name):
         legend=False  # no legend in zoom
     )
 
+    0.000035
+
     # Optional: adjust ticks for zoom clarity
+    axins.set_ylim(1, 35)
     axins.set_xlim(0, len(df_zoom["Message"].unique()) - 1)
-    axins.tick_params(axis='both', which='major', labelsize=23)
+    axins.tick_params(axis='both', which='major', labelsize=28)
     axins.set_title("")
     axins.set_xlabel('', fontsize=28, labelpad=23)
     axins.set_ylabel('Latency (us)', fontsize=28, labelpad=23)
@@ -355,8 +351,8 @@ if __name__ == "__main__":
     
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
-    folder_1 = f"data/haicgu-eth/all2all_cong"
-    folder_2 = f"data/nanjing/all2all_no_NSLB"
+    folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
+    folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
 
     # for coll in collectives:
     #     if coll == "all2all":
@@ -377,12 +373,11 @@ if __name__ == "__main__":
         elif coll == "allgather":
             coll_name = "All-Gather"
 
-        data = LoadData(data, f"HAICGU {coll_name}", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"Nanjing {coll_name}", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        #data = LoadData(data, f"Congested HAICGU {coll_name}", nodes , folder_1, messages=messages, cong=True, coll=coll)
-        #data = LoadData(data, f"Congested Nanjing {coll_name}", nodes , folder_2, messages=messages, cong=True, coll=coll)
-        DrawLinePlot(data, f"{coll_name} HAICGU vs Nanjing with All-to-All Congestion")
-        #DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
+        #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
+        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
         CleanData(data)
 
 

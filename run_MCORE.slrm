@@ -5,10 +5,10 @@
 #SBATCH --nodes=8
 #SBATCH --ntasks-per-node=1           
 #SBATCH --time=02:00:00  
-#SBATCH --partition=cn-eth
+#SBATCH --partition=cn-ib
 #SBATCH --account=dcn
 #SBATCH --reservation=dcn_5
-#SBATCH --exclude=cn19
+#SBATCH --exclude=cn17
 #SBATCH --exclusive
 
 #account haicgu,leonardo = dcn, IscrB_SWING

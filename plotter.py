@@ -35,7 +35,7 @@ def DrawLinePlot(data, name):
         style='Cluster',
         markers=True,
         markersize=10,
-        linewidth=7,
+        linewidth=8,
         ax=ax1,
         palette=palette
     )
@@ -46,7 +46,15 @@ def DrawLinePlot(data, name):
         color='red',
         linestyle='--',
         linewidth=6,
-        label=f'Theoretical Peak {200} Gb/s'
+        label=f'Nanjing Theoretical Peak {200} Gb/s'
+    )
+
+    ax1.axhline(
+        y=100,
+        color='red',
+        linestyle=':',
+        linewidth=6,
+        label=f'HAICGU Theoretical Peak {100} Gb/s'
     )
 
     # Etichette
@@ -58,15 +66,15 @@ def DrawLinePlot(data, name):
 
     # Legenda centrata in basso
     ax1.legend(
-        fontsize=23,
+        fontsize=28,
         loc='upper center',
         bbox_to_anchor=(0.5, -0.15),
-        ncol=3,
+        ncol=4,
         frameon=True
     )
 
     # --- Subplot zoom-in ---
-    zoom_msgs = ['8 B', '64 B', '512 B']
+    zoom_msgs = ['8 B', '64 B', '512 B', '4 KiB']
     df_zoom = df[df['Message'].isin(zoom_msgs)]
 
     axins = inset_axes(ax1, width="45%", height="45%", loc='upper left',
@@ -347,33 +355,34 @@ if __name__ == "__main__":
     
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
-    folder_1 = f"data/nanjing/all2all_yes_NSLB"
+    folder_1 = f"data/haicgu-eth/all2all_cong"
     folder_2 = f"data/nanjing/all2all_no_NSLB"
 
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
+
+    #     data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=False, coll=coll)
+    #     data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=False, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=True, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=True, coll=coll)
+    #     DrawScatterPlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
+    #     CleanData(data)
+
     for coll in collectives:
         if coll == "all2all":
             coll_name = "All-to-All"
         elif coll == "allgather":
             coll_name = "All-Gather"
 
-        data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=False, coll=coll)
-        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=False, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages_scatter, cong=True, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages_scatter, cong=True, coll=coll)
-        DrawScatterPlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
-        CleanData(data)
-
-    for coll in collectives:
-        if coll == "all2all":
-            coll_name = "All-to-All"
-        elif coll == "allgather":
-            coll_name = "All-Gather"
-
-        data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
-        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
+        data = LoadData(data, f"HAICGU {coll_name}", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"Nanjing {coll_name}", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        #data = LoadData(data, f"Congested HAICGU {coll_name}", nodes , folder_1, messages=messages, cong=True, coll=coll)
+        #data = LoadData(data, f"Congested Nanjing {coll_name}", nodes , folder_2, messages=messages, cong=True, coll=coll)
+        DrawLinePlot(data, f"{coll_name} HAICGU vs Nanjing with All-to-All Congestion")
+        #DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
         CleanData(data)
 
 

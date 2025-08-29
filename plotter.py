@@ -216,7 +216,7 @@ def DrawScatterPlot(data, name):
     sns.set_context("talk")
 
     # Create the figure and axes
-    f, ax1 = plt.subplots(figsize=(35, 20))
+    f, ax1 = plt.subplots(figsize=(30, 10))
     
     # Convert input data to a DataFrame
     df = pd.DataFrame(data)
@@ -413,7 +413,7 @@ if __name__ == "__main__":
             #data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=[mess], cong=False, coll=coll)
             data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=[mess], cong=False, coll=coll)
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=[mess], cong=False, coll=coll)
-            DrawScatterPlot(data, f"{coll_name}{mess}HACGU vs Nanjing scatter")
+            DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter")
             CleanData(data)
 
 
@@ -434,5 +434,21 @@ if __name__ == "__main__":
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll, cook=True)
         else:
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot2(data, f"{coll_name} HACGU vs Nanjing line")
+        DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line")
+        CleanData(data)
+
+
+    nodes = 4
+    folder_1 = f"data/haicgu-eth/{nodes}"
+    folder_2 = f"data/haicgu-burst/{nodes}"
+
+    for coll in collectives:
+        if coll == "all2all":
+            coll_name = "All-to-All"
+        elif coll == "allgather":
+            coll_name = "All-Gather"
+
+        data = LoadData(data, f"HAICGU Continue", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"HAICGU Burst", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        DrawLinePlot2(data, f"{coll_name} HAICGU Burst")
         CleanData(data)

@@ -170,8 +170,8 @@ int main(int argc, char *argv[]) {
 
     bool burst_pause_rand = false;
 
-    double burst_pause=1e-6; // seconds, 10e6 10e4 10e2 1 (us)  
-    double burst_length=0;
+    double burst_pause=1e-6;
+    double burst_length=1e-4;
     double burst_start_time;
     double measure_start_time;
     double burst_length_mean=burst_length;

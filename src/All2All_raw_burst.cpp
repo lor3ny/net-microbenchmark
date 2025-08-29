@@ -17,6 +17,22 @@ int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int ra
   return incorrect;
 }
 
+static double rand_expo(double mean)
+{
+    double lambda = 1.0 / mean;
+    double u = rand() / (RAND_MAX + 1.0);
+    return -log(1 - u) / lambda;
+}
+
+/*sleep seconds given as double*/
+static int dsleep(double t)
+{
+    struct timespec t1, t2;
+    t1.tv_sec = (long)t;
+    t1.tv_nsec = (t - t1.tv_sec) * 1000000000L;
+    return nanosleep(&t1, &t2);
+}
+
 
 void all2all_memcpy(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
 
@@ -171,14 +187,14 @@ int main(int argc, char *argv[]) {
     }
 
     // TESTING THE COLLECTIVE
+    vector<double> samples;
 
-    double* samples = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
-    double* samples_all = (double*) malloc_align(sizeof(double) * BENCHMARK_ITERATIONS);
     MPI_Barrier(MPI_COMM_WORLD);
 
 
     int groups = (BENCHMARK_ITERATIONS + WARM_UP) / BURST_SIZE;
     for(int i = 0; i < groups; ++i){
+      int burst_length=rand_expo(burst_length_mean);
 
       for(int j = 0; j < BURST_SIZE; ++j){
         double start_time, end_time;
@@ -195,13 +211,64 @@ int main(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
       }
 
+      if(burst_pause!=0){
+          if(burst_pause_rand){ /*randomized break length*/
+              burst_pause=rand_expo(burst_pause_mean);
+          }
+          dsleep(burst_pause);
+      }
+
       std::this_thread::sleep_for(std::chrono::seconds(5));
     }
-    total_time = (double)(total_time)/BENCHMARK_ITERATIONS;
 
-    double max_time;
-    MPI_Reduce(&total_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(samples, samples_all, BENCHMARK_ITERATIONS, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    double burst_length=0;
+    double burst_start_time;
+    double measure_start_time;
+    double burst_length_mean=burst_length;
+    double burst_pause_mean=burst_pause;
+    bool burst_cont=false;
+    int curr_iters=0;
+
+    for(k=0;k<BENCHMARK_ITERATIONS + WARM_UP;k++){
+  
+      burst_length=rand_expo(burst_length_mean);
+       
+      burst_start_time=MPI_Wtime();
+      do{
+          MPI_Barrier(MPI_COMM_WORLD);
+
+          double start_time, end_time;
+          all2all_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+          start_time = MPI_Wtime();
+          custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
+          end_time = MPI_Wtime();
+
+          if(i>WARM_UP) {
+            //samples[i-WARM_UP] = (end_time - start_time);
+            samples.push_back(end_time - start_time);
+          }
+
+          MPI_Barrier(MPI_COMM_WORLD);
+
+          curr_iters++;
+          if(burst_length!=0){ /*bcast needed for synch if bursts timed*/
+              if(rank == 0){ /*master decides if burst should be continued*/
+                  burst_cont=((MPI_Wtime()-burst_start_time)<burst_length);
+              }
+              MPI_Bcast(&burst_cont,1,MPI_INT,master_rank,MPI_COMM_WORLD); /*bcast the masters decision*/
+          }
+
+      }while(burst_cont);
+
+      if(burst_pause!=0){
+          burst_pause=rand_expo(burst_pause_mean);
+          dsleep(burst_pause);
+      }
+    }
+
+    vector<double> samples_all = vector<double>(samples.size(), 0.0);
+    MPI_Reduce(samples.data(), samples_all.data(), samples.size(), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
 

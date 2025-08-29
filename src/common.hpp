@@ -7,6 +7,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+#include <time.h>
 
 #define B1 1
 #define KiB1 1024

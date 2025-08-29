@@ -10,7 +10,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.ticker import ScalarFormatter
 
 
-def DrawLinePlot(data, name):
+def DrawLinePlot(data, name, palette):
     print(f"Plotting data collective: {name}")
 
     # Imposta stile e contesto
@@ -22,10 +22,6 @@ def DrawLinePlot(data, name):
 
     # Conversione dati in DataFrame
     df = pd.DataFrame(data)
-
-    # Palette migliorata
-    palette = sns.color_palette("husl", n_colors=df['Cluster'].nunique()+1)
-    palette = palette[1:]
 
     # --- Lineplot principale ---
     sns.lineplot(
@@ -103,7 +99,7 @@ def DrawLinePlot(data, name):
 
 
 
-def DrawLinePlot2(data, name):
+def DrawLinePlot2(data, name, palette):
     print(f"Plotting data collective: {name}")
 
     # Imposta stile e contesto
@@ -208,7 +204,7 @@ def DrawLinePlot2(data, name):
 
 
 
-def DrawScatterPlot(data, name):
+def DrawScatterPlot(data, name, palette):
     print(f"Plotting data collective: {name}")
 
     # Use a dark theme for the plot
@@ -381,6 +377,9 @@ if __name__ == "__main__":
     
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
+    palette = sns.color_palette("husl", n_colors=10)
+    palette = palette[1:]
+
     nodes = 4
     folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
     folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
@@ -395,7 +394,7 @@ if __name__ == "__main__":
         data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
         data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
         data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
-        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion")
+        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
         CleanData(data)
 
     nodes = 4
@@ -413,7 +412,7 @@ if __name__ == "__main__":
             #data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=[mess], cong=False, coll=coll)
             data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=[mess], cong=False, coll=coll)
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=[mess], cong=False, coll=coll)
-            DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter")
+            DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter", palette)
             CleanData(data)
 
 
@@ -434,7 +433,7 @@ if __name__ == "__main__":
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll, cook=True)
         else:
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line")
+        DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line", palette)
         CleanData(data)
 
 
@@ -450,5 +449,5 @@ if __name__ == "__main__":
 
         data = LoadData(data, f"HAICGU Continue", nodes , folder_1, messages=messages, cong=False, coll=coll)
         data = LoadData(data, f"HAICGU Burst", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot2(data, f"{coll_name} HAICGU Burst")
+        DrawLinePlot2(data, f"{coll_name} HAICGU Burst", palette)
         CleanData(data)

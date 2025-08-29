@@ -18,13 +18,14 @@ if [ "$1" == "leonardo" ]; then
 fi
 
 #mpicxx src/ReduceScatter.cpp -O3 -o build/reducescatter
-mpicxx src/AllReduce.cpp -O3 -o build/allreduce
+mpicxx src/AllReduce_raw.cpp -O3 -o build/allreduce
 mpicxx src/AllGather.cpp -O3 -o build/allgather
 mpicxx src/All2All.cpp -O3 -o build/all2all
 mpicxx src/PointPoint.cpp -O3 -o build/pointpoint
 mpicxx src/PointPoint_async.cpp -O3 -o build/pointpoint_async
-mpicxx src/All2All_Raw.cpp -O3 -o build/all2all_raw
-mpicxx src/AllGather_Raw.cpp -O3 -o build/allgather_raw
+mpicxx src/All2All_raw.cpp -O3 -o build/all2all_raw
+mpicxx src/AllGather_raw.cpp -O3 -o build/allgather_raw
+mpicxx src/All2All_raw_burst.cpp -O3 -o build/allgather_raw_burst
 mpicxx src/NoiseAll2All.cpp -O3 -o build/noise_all2all
 mpicxx src/NoiseIncast.cpp -O3 -o build/noise_incast
 

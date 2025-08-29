@@ -5,9 +5,9 @@
 #include <unistd.h>
 #include <cstring>
 #include <vector>
-#include <thread>
-#include <chrono>
 #include <time.h>
+#include <cstdlib> 
+#include <cmath>   
 
 #define B1 1
 #define KiB1 1024
@@ -24,4 +24,20 @@ static void* malloc_align(size_t size){
         exit(-1);
     }
     return p;
+}
+
+static double rand_expo(double mean)
+{
+    double lambda = 1.0 / mean;
+    double u = rand() / (RAND_MAX + 1.0);
+    return -log(1 - u) / lambda;
+}
+
+/*sleep seconds given as double*/
+static int dsleep(double t)
+{
+    struct timespec t1, t2;
+    t1.tv_sec = (long)t;
+    t1.tv_nsec = (t - t1.tv_sec) * 1000000000L;
+    return nanosleep(&t1, &t2);
 }

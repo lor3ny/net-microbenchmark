@@ -17,23 +17,6 @@ int VerifyCollective(unsigned char* buf_a, unsigned char* buf_b, int dim, int ra
   return incorrect;
 }
 
-static double rand_expo(double mean)
-{
-    double lambda = 1.0 / mean;
-    double u = rand() / (RAND_MAX + 1.0);
-    return -log(1 - u) / lambda;
-}
-
-/*sleep seconds given as double*/
-static int dsleep(double t)
-{
-    struct timespec t1, t2;
-    t1.tv_sec = (long)t;
-    t1.tv_nsec = (t - t1.tv_sec) * 1000000000L;
-    return nanosleep(&t1, &t2);
-}
-
-
 void all2all_memcpy(const void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
 
     int rank, size;
@@ -148,12 +131,6 @@ int main(int argc, char *argv[]) {
       WARM_UP = atoi(argv[4]);
     }
 
-    int BURST_SIZE = 10;
-    if(argc >= 6){
-      BURST_SIZE = atoi(argv[5]);
-    }
-
-
     MPI_Barrier(MPI_COMM_WORLD);
   
 
@@ -191,37 +168,9 @@ int main(int argc, char *argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    bool burst_pause_rand = false;
 
-    int groups = (BENCHMARK_ITERATIONS + WARM_UP) / BURST_SIZE;
-    for(int i = 0; i < groups; ++i){
-      int burst_length=rand_expo(burst_length_mean);
-
-      for(int j = 0; j < BURST_SIZE; ++j){
-        double start_time, end_time;
-        all2all_memcpy(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
-        start_time = MPI_Wtime();
-        custom_alltoall(send_buffer, BUFFER_SIZE, MPI_BYTE, recv_buffer, BUFFER_SIZE, MPI_BYTE, MPI_COMM_WORLD);
-        end_time = MPI_Wtime();
-
-        if(i>WARM_UP) {
-          samples[i-WARM_UP] = (end_time - start_time);
-          total_time += (end_time - start_time);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-      }
-
-      if(burst_pause!=0){
-          if(burst_pause_rand){ /*randomized break length*/
-              burst_pause=rand_expo(burst_pause_mean);
-          }
-          dsleep(burst_pause);
-      }
-
-      std::this_thread::sleep_for(std::chrono::seconds(5));
-    }
-
-
+    double burst_pause=1e-6; // seconds, 10e6 10e4 10e2 1 (us)  
     double burst_length=0;
     double burst_start_time;
     double measure_start_time;
@@ -230,10 +179,13 @@ int main(int argc, char *argv[]) {
     bool burst_cont=false;
     int curr_iters=0;
 
-    for(k=0;k<BENCHMARK_ITERATIONS + WARM_UP;k++){
-  
-      burst_length=rand_expo(burst_length_mean);
-       
+
+    for(int i=0; i<BENCHMARK_ITERATIONS + WARM_UP; i++){
+      
+      if(burst_pause_rand){ /*randomized break length*/
+          burst_pause=rand_expo(burst_pause_mean);
+      }
+
       burst_start_time=MPI_Wtime();
       do{
           MPI_Barrier(MPI_COMM_WORLD);
@@ -256,13 +208,15 @@ int main(int argc, char *argv[]) {
               if(rank == 0){ /*master decides if burst should be continued*/
                   burst_cont=((MPI_Wtime()-burst_start_time)<burst_length);
               }
-              MPI_Bcast(&burst_cont,1,MPI_INT,master_rank,MPI_COMM_WORLD); /*bcast the masters decision*/
+              MPI_Bcast(&burst_cont,1,MPI_INT,0,MPI_COMM_WORLD); /*bcast the masters decision*/
           }
 
       }while(burst_cont);
 
       if(burst_pause!=0){
-          burst_pause=rand_expo(burst_pause_mean);
+          if(burst_pause_rand){ /*randomized break length*/
+              burst_pause=rand_expo(burst_pause_mean);
+          }
           dsleep(burst_pause);
       }
     }
@@ -285,8 +239,6 @@ int main(int argc, char *argv[]) {
 
     free(send_buffer);
     free(recv_buffer);
-    free(samples);
-    free(samples_all);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

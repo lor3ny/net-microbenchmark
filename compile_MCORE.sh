@@ -29,9 +29,11 @@ fi
 # mpicxx src/PointPoint_async.cpp -O3 -o build/pointpoint_async
 # mpicxx src/All2All_raw.cpp -O3 -o build/all2all_raw
 # mpicxx src/AllGather_raw.cpp -O3 -o build/allgather_raw
-# mpicxx src/NoiseAll2All.cpp -O3 -o build/noise_all2all
-# mpicxx src/NoiseIncast.cpp -O3 -o build/noise_incast
+
+#CONGESTION NOISE
+mpicxx src/NoiseAll2All.cpp -O3 -o build/noise_all2all
+mpicxx src/NoiseIncast.cpp -O3 -o build/noise_incast
 
 #BURSTS
-mpicxx src/All2All_raw_burst.cpp -O3 -o build/allgather_raw_burst
+mpicxx src/All2All_raw_burst.cpp -O3 -o build/all2all_raw_burst
 

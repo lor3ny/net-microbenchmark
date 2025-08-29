@@ -7,6 +7,8 @@
 #SBATCH --time=02:00:00  
 #SBATCH --partition=cn-eth
 #SBATCH --account=dcn
+#SBATCH --reservation=dcn_5
+#SBATCH --exclude=cn19
 #SBATCH --exclusive
 
 #account haicgu,leonardo = dcn, IscrB_SWING
@@ -68,7 +70,7 @@ if [ "$1" == "nanjing" ]; then
 
     sleep 3
 
-    for BENCH in all2all_raw_burst
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
@@ -91,7 +93,7 @@ if [ "$1" == "nanjing" ]; then
 
     sleep 3
 
-    for BENCH in all2all_raw_burst
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
@@ -123,7 +125,7 @@ else
 
     sleep 3
 
-    for BENCH in all2all_raw_burst
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
@@ -146,7 +148,7 @@ else
 
     sleep 3
 
-    for BENCH in all2all_raw_burst
+    for BENCH in all2all_raw allgather_raw #allreduce reducescatter
     do
         echo $BENCH
         srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv

@@ -1,0 +1,98 @@
+#!/bin/bash
+#SBATCH --output=logs/%j.out
+#SBATCH --error=logs/%j.err
+#SBATCH --ntasks=8
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=1           
+#SBATCH --time=02:00:00  
+#SBATCH --partition=cn-ib
+#SBATCH --account=dcn
+#SBATCH --reservation=dcn_5
+#SBATCH --exclude=cn17
+#SBATCH --exclusive
+
+#account haicgu,leonardo = dcn, IscrB_SWING
+#partition haicgu,leonardo = cn-ib or cn-eth, boost_usr_prod
+
+SYSTEM=DEFAULT
+if [ -z "$1" ]; then
+    echo "Error: Missing argument. Please provide a target (e.g., haicgu, leonardo or nanjing)."
+    exit 1
+else 
+    SYSTEM="$1"
+fi
+
+# Define the number of processes
+PROCS=10
+
+if [ "$1" == "haicgu" ]; then
+    module purge 
+    module load GCC
+    module load OpenMPI
+    PROCS=$SLURM_NTASKS
+fi
+
+if [ "$1" == "leonardo" ]; then
+    module purge 
+    module load openmpi
+    export UCX_IB_SL=1
+    #export UCX_PROTO_ENABLE=y
+    #export UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1 # This is to force the uss of only one port (100Gb/s)
+    PROCS=$SLURM_NTASKS
+    echo $PROCS
+fi
+
+
+# IMPORTANT: Uncomment if you want to fix the algorithm
+
+#export OMPI_MCA_coll_tuned_use_dynamic_rules=1
+#export OMPI_MCA_coll_tuned_allgather_algorithm=4
+#export OMPI_MCA_coll_tuned_allreduce_algorithm=4
+#export OMPI_MCA_coll_tuned_alltoall_algorithm=3
+#export OMPI_MCA_coll_tuned_reduce_scatter_algorithm=3
+#export OMPI_MCA_coll_tuned_allgather_algorithm_segmentsize=4096
+#export OMPI_MCA_coll_tuned_allreduce_algorithm=4
+#export OMPI_MCA_coll_tuned_allreduce_algorithm_segmentsize=4096
+#export OMPI_MCA_coll_tuned_allreduce_algorithm_tree_fanout=4
+
+#export OMPI_MCA_btl_openib_eager_limit=16777216 # 16 MiB
+
+TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
+
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
+
+if [ "$1" == "nanjing" ]; then
+
+    export PATH=/root/hpc/build/gcc/bin:/root/hpc/build/bin:$PATH
+    export LD_LIBRARY_PATH=/root/hpc/build/gcc/lib64:/root/hpc/build/lib:$LD_LIBRARY_PATH
+
+    for BENCH in all2all_raw_burst
+    do
+        echo $BENCH
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        mpirun --allow-run-as-root -x PATH -x LD_LIBRARY_PATH -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/8hosts ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+    done
+else
+    for BENCH in all2all_raw_burst
+    do
+        echo $BENCH
+        srun ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
+        srun ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
+        srun ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv 
+        srun ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
+        srun ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv 
+        srun ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv 
+        srun ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
+        srun ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
+        srun ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+    done
+fi
+
+# usually 16 and 128 are 100 iterations

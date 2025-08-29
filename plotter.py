@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+import random
 import glob
 import sys
 
@@ -33,8 +34,7 @@ def DrawLinePlot(data, name, palette):
         markers=True,
         markersize=10,
         linewidth=8,
-        ax=ax1,
-        palette=palette
+        ax=ax1
     )
 
     # Linea teorica
@@ -48,18 +48,19 @@ def DrawLinePlot(data, name, palette):
 
     # Etichette
     ax1.set_xlim(0, len(df["Message"].unique()) - 1)
-    ax1.tick_params(axis='both', which='major', labelsize=30)
-    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=30, labelpad=23)
-    ax1.set_xlabel('Message Size', fontsize=30, labelpad=23)
+    ax1.tick_params(axis='both', which='major', labelsize=40)
+    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=40, labelpad=23)
+    ax1.set_xlabel('Message Size', fontsize=40, labelpad=23)
     #ax1.set_title(f'{name}', fontsize=38, pad=30)
 
     # Legenda centrata in basso
     ax1.legend(
-        fontsize=30,
+        fontsize=40,
         loc='upper center',
-        bbox_to_anchor=(0.5, -0.15),
+        bbox_to_anchor=(0.5, -0.2),
         ncol=2,
-        frameon=True
+        frameon=True,
+        title=None,
     )
 
     # --- Subplot zoom-in ---
@@ -80,7 +81,6 @@ def DrawLinePlot(data, name, palette):
         markersize=8,
         linewidth=7,
         ax=axins,
-        palette=palette,
         legend=False  # no legend in zoom
     )
 
@@ -107,14 +107,12 @@ def DrawLinePlot2(data, name, palette):
     sns.set_context("talk")
 
     # Crea figura principale
-    f, ax1 = plt.subplots(figsize=(30, 10))
+    f, ax1 = plt.subplots(figsize=(30, 9))
 
     # Conversione dati in DataFrame
     df = pd.DataFrame(data)
 
     # Palette migliorata
-    palette = sns.color_palette("husl", n_colors=df['Cluster'].nunique()+1)
-    palette = palette[1:]
 
     # --- Lineplot principale ---
     sns.lineplot(
@@ -126,8 +124,7 @@ def DrawLinePlot2(data, name, palette):
         markers=True,
         markersize=10,
         linewidth=8,
-        ax=ax1,
-        palette=palette
+        ax=ax1
     )
 
     # Linea teorica
@@ -151,18 +148,17 @@ def DrawLinePlot2(data, name, palette):
 
     # Etichette
     ax1.set_xlim(0, len(df["Message"].unique()) - 1)
-    ax1.tick_params(axis='both', which='major', labelsize=30)
-    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=30, labelpad=23)
-    ax1.set_xlabel('Message Size', fontsize=30, labelpad=23)
-    #ax1.set_title(f'{name}', fontsize=38, pad=30)
+    ax1.tick_params(axis='both', which='major', labelsize=40)
+    ax1.set_ylabel('Bandwidth (Gb/s)', fontsize=40, labelpad=23)
+    ax1.set_xlabel('Message Size', fontsize=40, labelpad=23)
 
-    # Legenda centrata in basso
     ax1.legend(
-        fontsize=30,
+        fontsize=40,           
         loc='upper center',
-        bbox_to_anchor=(0.5, -0.15),
+        bbox_to_anchor=(0.5, -0.2),  # più spazio sotto
         ncol=2,
-        frameon=True
+        frameon=True,
+        title=None,
     )
 
     # --- Subplot zoom-in ---
@@ -183,7 +179,6 @@ def DrawLinePlot2(data, name, palette):
         markersize=8,
         linewidth=7,
         ax=axins,
-        palette=palette,
         legend=False  # no legend in zoom
     )
 
@@ -212,13 +207,11 @@ def DrawScatterPlot(data, name, palette):
     sns.set_context("talk")
 
     # Create the figure and axes
-    f, ax1 = plt.subplots(figsize=(30, 10))
+    f, ax1 = plt.subplots(figsize=(30, 13))
     
     # Convert input data to a DataFrame
     df = pd.DataFrame(data)
     #df['cluster_collective'] = df['Cluster'].astype(str) + '_' + df['collective'].astype(str)
-    palette = sns.color_palette("husl", n_colors=df['Cluster'].nunique()+1)
-    palette = palette[1:]
 
     # Plot with seaborn
     fig = sns.scatterplot(
@@ -228,8 +221,7 @@ def DrawScatterPlot(data, name, palette):
         hue='Cluster',
         s=200,
         ax=ax1,
-        alpha=0.9,
-        palette=palette
+        alpha=0.9
     )
 
     ax1.axhline(
@@ -377,8 +369,8 @@ if __name__ == "__main__":
     
     collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
-    palette = sns.color_palette("husl", n_colors=10)
-    palette = palette[1:]
+    palette = ["#D242D2", "#2BD466", "#314EDF"]
+    sns.set_palette(palette)
 
     nodes = 4
     folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
@@ -392,8 +384,8 @@ if __name__ == "__main__":
 
         #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
         data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
         data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
+        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
         DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
         CleanData(data)
 
@@ -427,27 +419,27 @@ if __name__ == "__main__":
         elif coll == "allgather":
             coll_name = "All-Gather"
 
-        data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=messages, cong=False, coll=coll)
         data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=messages, cong=False, coll=coll)
         if coll == "all2all":
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll, cook=True)
         else:
             data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=messages, cong=False, coll=coll)
         DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line", palette)
         CleanData(data)
 
 
-    nodes = 4
-    folder_1 = f"data/haicgu-eth/{nodes}"
-    folder_2 = f"data/haicgu-burst/{nodes}"
+    # nodes = 4
+    # folder_1 = f"data/haicgu-eth/{nodes}"
+    # folder_2 = f"data/haicgu-burst/{nodes}"
 
-    for coll in collectives:
-        if coll == "all2all":
-            coll_name = "All-to-All"
-        elif coll == "allgather":
-            coll_name = "All-Gather"
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
 
-        data = LoadData(data, f"HAICGU Continue", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"HAICGU Burst", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        DrawLinePlot2(data, f"{coll_name} HAICGU Burst", palette)
-        CleanData(data)
+    #     data = LoadData(data, f"HAICGU Continue", nodes , folder_1, messages=messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"HAICGU Burst", nodes , folder_2, messages=messages, cong=False, coll=coll)
+    #     DrawLinePlot2(data, f"{coll_name} HAICGU Burst", palette)
+    #     CleanData(data)

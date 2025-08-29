@@ -52,7 +52,9 @@ fi
 
 TIMESTAMP=$(date +"%Y_%m_%d__%H_%M_%S")
 
-mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms
+mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms
 
 
 if [ "$1" == "nanjing" ]; then
@@ -71,15 +73,17 @@ if [ "$1" == "nanjing" ]; then
     for BENCH in all2all_raw_burst
     do
         echo $BENCH
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}_cong.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_cong.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/2097152_${BENCH}.csv 
     done
 
     sleep 3
@@ -94,15 +98,17 @@ if [ "$1" == "nanjing" ]; then
     for BENCH in all2all_raw_burst
     do
         echo $BENCH
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
-        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 32 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/32768_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 256 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/262144_${BENCH}.csv 
+        mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group2 ./build/${BENCH} 2 MiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/2097152_${BENCH}.csv 
     done
 else
     nodes=($(scontrol show hostnames))
@@ -126,15 +132,17 @@ else
     for BENCH in all2all_raw_burst
     do
         echo $BENCH
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}_cong.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}_cong.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}_cong.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}_cong.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}_cong.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}_cong.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}_cong.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}_cong.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}_cong.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/2097152_${BENCH}.csv 
     done
 
     sleep 3
@@ -149,14 +157,19 @@ else
     for BENCH in all2all_raw_burst
     do
         echo $BENCH
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 8 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/8_${BENCH}.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 64 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/64_${BENCH}.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 512 B 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/512_${BENCH}.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 4 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/4096_${BENCH}.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/32768_${BENCH}.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/262144_${BENCH}.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/2097152_${BENCH}.csv 
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 16 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/16777216_${BENCH}.csv
-        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 128 MiB 1000 100 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/134217728_${BENCH}.csv
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.000001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-6_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.0001 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-4_30ms/2097152_${BENCH}.csv 
+        sleep 1
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 32 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/32768_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 256 KiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/262144_${BENCH}.csv 
+        srun --nodes=4 --ntasks=4 --ntasks-per-node=1 --nodelist=$group2 ./build/${BENCH} 2 MiB 1000 100 0.01 0.003 > data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/1e-2_30ms/2097152_${BENCH}.csv 
     done
 fi
+
+double burst_pause=1e-6;
+    double burst_length=1e-2*3; //30ms

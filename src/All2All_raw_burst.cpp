@@ -130,6 +130,15 @@ int main(int argc, char *argv[]) {
     if(argc >= 5){
       WARM_UP = atoi(argv[4]);
     }
+    double burst_pause=1e-6;
+    if(argc >= 6){
+      burst_pause = atof(argv[5]);
+    }
+    double burst_length=1e-2*3; //30ms
+    if(argc >= 7){
+      burst_length = atof(argv[6]);
+    }
+    
 
     MPI_Barrier(MPI_COMM_WORLD);
   
@@ -160,7 +169,9 @@ int main(int argc, char *argv[]) {
       cerr << "ERROR[" << rank << "]: Custom collective didn't pass the validation!" << endl;
       return EXIT_FAILURE;
     } else {
-      cerr << "Test passed!" << endl;
+      if(rank == 0){
+        cerr << "Test passed! Benchmark Proceed." << endl;  
+      }
     }
 
     // TESTING THE COLLECTIVE
@@ -170,21 +181,19 @@ int main(int argc, char *argv[]) {
 
     bool burst_pause_rand = false;
 
-    double burst_pause=1e-6;
-    double burst_length=1e-4;
     double burst_start_time;
     double measure_start_time;
     double burst_length_mean=burst_length;
     double burst_pause_mean=burst_pause;
-    bool burst_cont=false;
+    int burst_cont=0;
     int curr_iters=0;
-
 
     for(int i=0; i<BENCHMARK_ITERATIONS + WARM_UP; i++){
       
       if(burst_pause_rand){ /*randomized break length*/
           burst_pause=rand_expo(burst_pause_mean);
       }
+      curr_iters=0;
 
       burst_start_time=MPI_Wtime();
       do{
@@ -197,7 +206,6 @@ int main(int argc, char *argv[]) {
           end_time = MPI_Wtime();
 
           if(i>WARM_UP) {
-            //samples[i-WARM_UP] = (end_time - start_time);
             samples.push_back(end_time - start_time);
           }
 
@@ -208,7 +216,7 @@ int main(int argc, char *argv[]) {
               if(rank == 0){ /*master decides if burst should be continued*/
                   burst_cont=((MPI_Wtime()-burst_start_time)<burst_length);
               }
-              MPI_Bcast(&burst_cont,1,MPI_INT,0,MPI_COMM_WORLD); /*bcast the masters decision*/
+              MPI_Bcast(&burst_cont,1, MPI_INT, 0, MPI_COMM_WORLD); /*bcast the masters decision*/
           }
 
       }while(burst_cont);
@@ -227,14 +235,14 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0){
-      printf("highest\n");
-      for(int i = 0; i < BENCHMARK_ITERATIONS; ++i){
+      printf("highest");
+      for(int i = 0; i < samples_all.size(); ++i){
         printf("%.9f\n", samples_all[i]);
       }
     }
 
     if(rank == 0){
-      cerr << "BUFFER: " << size_count << size_type << " DONE!" << endl;
+      cerr << "BUFFER: " << size_count << size_type <<" DONE! Bursts of " << curr_iters << endl;
     }
 
     free(send_buffer);

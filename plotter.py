@@ -3,12 +3,62 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-import random
-import glob
-import sys
-
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.ticker import ScalarFormatter
+from matplotlib.colors import LinearSegmentedColormap
+
+
+
+def plot_heatmaps(data, name):
+    df = pd.DataFrame(data)
+
+    # Ensure correct ordering of categories
+    df['burst_length'] = pd.Categorical(df['burst_length'],
+                                        categories=['1e-2', '1e-4', '1e-6'],
+                                        ordered=True)
+    df['burst_gap'] = pd.Categorical(df['burst_gap'],
+                                     categories=['1ms', '10ms', '100ms'],
+                                     ordered=True)
+
+    sns.set_style("whitegrid")
+    sns.set_context("talk")
+
+    messages = df['message'].unique()
+    n_msgs = len(messages)
+
+    acid_cmap = LinearSegmentedColormap.from_list("purple_acidgreen",
+                                              ["#FF2828", "#D242D2", "#2BD466"]) 
+
+    # Create one subplot per message, stacked vertically
+    fig, axes = plt.subplots(1, n_msgs, figsize=(7 * n_msgs, 6), sharex=True)
+
+    if n_msgs == 1:
+        axes = [axes]  # ensure axes is iterable
+
+    heatmaps = []
+    for ax, msg in zip(axes, messages):
+        df_msg = df[df['message'] == msg]
+
+        # Pivot: rows = burst_length, cols = burst_gap, values = factor
+        pivot = df_msg.pivot(index="burst_length", columns="burst_gap", values="factor")
+
+        hm = sns.heatmap(pivot, annot=True, fmt=".2f", cmap=acid_cmap,
+                    vmin=0.1, vmax=1.2, cbar=False,
+                    ax=ax)
+        
+        heatmaps.append(hm)
+
+        ax.set_title(f"Message Size: {msg}")
+        ax.set_ylabel("Burst Runtime (s)")
+        ax.set_xlabel("Burst Gap (ms)")
+
+    cbar_ax = fig.add_axes([0.25, 1.1, 0.5, 0.03])  # [left, bottom, width, height]
+    fig.colorbar(heatmaps[0].collections[0], cax=cbar_ax, orientation="horizontal")
+
+    plt.savefig(f'plots/{name}_heatmaps.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+
 
 
 def DrawLinePlot(data, name, palette):
@@ -266,6 +316,64 @@ def DrawScatterPlot(data, name, palette):
 
 
 
+def LoadHeatmapData(data, cluster, path, coll):
+
+    print (f"Loading data from {path}, coll={coll}")
+
+    burst_length = ['1e-2', '1e-4', '1e-6']
+    burst_gap = ['1ms', '10ms', '100ms']
+    messages = ['32 KiB', '256 KiB', '2 MiB']
+
+    for blen in burst_length:
+        for bgap in burst_gap:
+    
+            folder_name = blen + "_" + bgap
+            full_path = os.path.join(path, folder_name)
+
+            for msg in messages:
+                msg_mult = msg.strip().split(' ')[1]
+                msg_value = msg.strip().split(' ')[0]
+                if msg_mult == 'B':
+                    multiplier = 1
+                elif msg_mult == 'KiB':
+                    multiplier = 1024
+                elif msg_mult == 'MiB':
+                    multiplier = 1024**2
+                elif msg_mult == 'GiB':
+                    multiplier = 1024**3
+                else:
+                    raise ValueError(f"Unknown message size unit in {msg}")
+
+                message_bytes = int(msg_value) * multiplier
+
+                cong_csv_path = os.path.join(full_path, f"{message_bytes}_{coll}_cong.csv")
+                csv_path = os.path.join(full_path,  f"{message_bytes}_{coll}.csv")
+
+                cong_iterations = 0
+                with open(cong_csv_path, 'r') as file1:
+                        lines = file1.readlines()[2:]  # Skip the first line
+                        cong_iterations = len(lines)
+                
+                iterations = 0
+                with open(csv_path, 'r') as file2:
+                        lines = file2.readlines()[2:]  # Skip the first line
+                        iterations = len(lines)
+
+                print(f"Message: {msg}, Burst Length: {blen}, Burst Gap: {bgap}, Iterations: {iterations}, Congested Iterations: {cong_iterations}")
+
+                factor = iterations/cong_iterations
+
+                data['factor'].append(factor)
+                data['message'].append(msg)
+                data['cluster'].append(cluster)
+                data['burst_length'].append(blen)
+                data['burst_gap'].append(bgap)
+                data['collective'].append(coll)
+
+    return data
+
+
+
 def LoadData(data, cluster, nodes, path, messages, coll=None, cong=False, cook=False):
 
     print (f"Loading data from {path} with cong={cong} and coll={coll}")
@@ -350,83 +458,99 @@ def CleanData(data):
 
 if __name__ == "__main__":
 
-    messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    # messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    # data = {
+    #     'Message': [],
+    #     'message_bytes': [],
+    #     'latency': [],
+    #     'bandwidth': [],
+    #     'Cluster': [],
+    #     'collective': [],
+    #     'iteration': []
+    # }
+
+
+    # messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    # small_messages = ['8 B', '64 B', '512 B', '4 KiB',]
+    # big_messages = ['32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    # messages_scatter = ['16 MiB', '128 MiB']
+    
+    # collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
+
+    # palette = ["#D242D2", "#2BD466", "#314EDF"]
+    # sns.set_palette(palette)
+
+    # nodes = 4
+    # folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
+    # folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
+
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
+
+    #     #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
+    #     data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
+    #     DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
+    #     CleanData(data)
+
+    # nodes = 4
+    # folder_1 = f"data/haicgu-eth/{nodes}"
+    # folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
+    # folder_3 = f"data/haicgu-ib/{nodes}"
+
+    # for coll in collectives:
+    #     for mess in messages_scatter:
+    #         if coll == "all2all":
+    #             coll_name = "All-to-All"
+    #         elif coll == "allgather":
+    #             coll_name = "All-Gather"
+
+    #         #data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=[mess], cong=False, coll=coll)
+    #         data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=[mess], cong=False, coll=coll)
+    #         data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=[mess], cong=False, coll=coll)
+    #         DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter", palette)
+    #         CleanData(data)
+
+
+    # nodes = 8
+    # folder_1 = f"data/haicgu-eth/{nodes}"
+    # folder_2 = f"data/nanjing/{nodes}"
+    # folder_3 = f"data/haicgu-ib/{nodes}"
+
+    # for coll in collectives:
+    #     if coll == "all2all":
+    #         coll_name = "All-to-All"
+    #     elif coll == "allgather":
+    #         coll_name = "All-Gather"
+
+    #     data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=messages, cong=False, coll=coll)
+    #     if coll == "all2all":
+    #         data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll, cook=True)
+    #     else:
+    #         data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll)
+    #     data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=messages, cong=False, coll=coll)
+    #     DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line", palette)
+    #     CleanData(data)
+
     data = {
-        'Message': [],
-        'message_bytes': [],
-        'latency': [],
-        'bandwidth': [],
-        'Cluster': [],
+        'factor': [],
+        'message': [],
         'collective': [],
-        'iteration': []
+        'cluster': [],
+        'burst_length': [],
+        'burst_gap': []
     }
 
 
-    messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
-    small_messages = ['8 B', '64 B', '512 B', '4 KiB',]
-    big_messages = ['32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
-    messages_scatter = ['16 MiB', '128 MiB']
-    
-    collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
+    folder = f"data/nanjing/test/"
 
-    palette = ["#D242D2", "#2BD466", "#314EDF"]
-    sns.set_palette(palette)
-
-    nodes = 4
-    folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
-    folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
-
-    for coll in collectives:
-        if coll == "all2all":
-            coll_name = "All-to-All"
-        elif coll == "allgather":
-            coll_name = "All-Gather"
-
-        #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
-        data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
-        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
-        CleanData(data)
-
-    nodes = 4
-    folder_1 = f"data/haicgu-eth/{nodes}"
-    folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
-    folder_3 = f"data/haicgu-ib/{nodes}"
-
-    for coll in collectives:
-        for mess in messages_scatter:
-            if coll == "all2all":
-                coll_name = "All-to-All"
-            elif coll == "allgather":
-                coll_name = "All-Gather"
-
-            #data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=[mess], cong=False, coll=coll)
-            data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=[mess], cong=False, coll=coll)
-            data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=[mess], cong=False, coll=coll)
-            DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter", palette)
-            CleanData(data)
-
-
-    nodes = 8
-    folder_1 = f"data/haicgu-eth/{nodes}"
-    folder_2 = f"data/nanjing/{nodes}"
-    folder_3 = f"data/haicgu-ib/{nodes}"
-
-    for coll in collectives:
-        if coll == "all2all":
-            coll_name = "All-to-All"
-        elif coll == "allgather":
-            coll_name = "All-Gather"
-
-        data = LoadData(data, f"HAICGU RoCE", nodes , folder_1, messages=messages, cong=False, coll=coll)
-        if coll == "all2all":
-            data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll, cook=True)
-        else:
-            data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=messages, cong=False, coll=coll)
-        data = LoadData(data, f"HAICGU InfiniBand", nodes , folder_3, messages=messages, cong=False, coll=coll)
-        DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line", palette)
-        CleanData(data)
+    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw")  
+    plot_heatmaps(data, f"HEATMAP")
+    CleanData(data)  
 
 
     # nodes = 4

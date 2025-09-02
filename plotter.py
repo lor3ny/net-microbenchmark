@@ -546,12 +546,18 @@ if __name__ == "__main__":
     }
 
 
-    folder = f"data/nanjing/test/"
+    folder = f"data/nanjing/burst_no_NSLB/"
 
     data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw")  
     plot_heatmaps(data, f"HEATMAP")
     CleanData(data)  
 
+
+    folder = f"data/nanjing/burst_yes_NSLB/"
+
+    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw")  
+    plot_heatmaps(data, f"HEATMAP")
+    CleanData(data)  
 
     # nodes = 4
     # folder_1 = f"data/haicgu-eth/{nodes}"

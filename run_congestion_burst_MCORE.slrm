@@ -227,7 +227,7 @@ else
     sleep 3
 
     echo "Benchmarking with congestion done, killing noise_traffic (PID $noise_pid)..."
-    kill $noise_pid 2>/dev/n
+    kill $noise_pid
     wait $noise_pid 2>/dev/null
     echo "Killed noise (PID $noise_pid), starting benchmarking without congestion..."
 

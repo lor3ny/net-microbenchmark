@@ -27,10 +27,10 @@ def plot_heatmaps(data, name):
     n_msgs = len(messages)
 
     acid_cmap = LinearSegmentedColormap.from_list("purple_acidgreen",
-                                              ["#FF2828", "#D242D2", "#2BD466"]) 
+                                              ["#FC4F49", "#29C35F"]) 
 
     # Create one subplot per message, stacked vertically
-    fig, axes = plt.subplots(1, n_msgs, figsize=(7 * n_msgs, 6), sharex=True)
+    fig, axes = plt.subplots(1, n_msgs, figsize=(9 * n_msgs, 8), sharex=True)
 
     if n_msgs == 1:
         axes = [axes]  # ensure axes is iterable
@@ -42,18 +42,21 @@ def plot_heatmaps(data, name):
         # Pivot: rows = burst_length, cols = burst_gap, values = factor
         pivot = df_msg.pivot(index="burst_length", columns="burst_gap", values="factor")
 
-        hm = sns.heatmap(pivot, annot=True, fmt=".2f", cmap=acid_cmap,
-                    vmin=0.1, vmax=1.2, cbar=False,
+        hm = sns.heatmap(pivot, annot=True, fmt=".3f", cmap=acid_cmap,
+                    vmin=0.6, vmax=1.1, cbar=False, annot_kws={"size": 40}, yticklabels=False,
                     ax=ax)
         
         heatmaps.append(hm)
 
-        ax.set_title(f"Message Size: {msg}")
-        ax.set_ylabel("Burst Runtime (s)")
-        ax.set_xlabel("Burst Gap (ms)")
+        ax.set_title(f"Message Size: {msg}", fontsize=40, pad=30)
+        ax.set_ylabel("", fontsize=40, labelpad=15)
+        ax.set_xlabel("", fontsize=40, labelpad=15)
+        ax.tick_params(axis='both', which='major', labelsize=40)
 
-    cbar_ax = fig.add_axes([0.25, 1.1, 0.5, 0.03])  # [left, bottom, width, height]
+    cbar_ax = fig.add_axes([0.123, 1.15, 0.78, 0.03])  # [left, bottom, width, height]
     fig.colorbar(heatmaps[0].collections[0], cax=cbar_ax, orientation="horizontal")
+    cbar_ax.tick_params(labelsize=40)  
+
 
     plt.savefig(f'plots/{name}_heatmaps.png', dpi=300, bbox_inches='tight')
     plt.close()
@@ -350,22 +353,38 @@ def LoadHeatmapData(data, cluster, path, coll):
                 csv_path = os.path.join(full_path,  f"{message_bytes}_{coll}.csv")
 
                 cong_iterations = 0
+                cong_latencies = []
                 with open(cong_csv_path, 'r') as file1:
                         lines = file1.readlines()[2:]  # Skip the first line
                         cong_iterations = len(lines)
-                
+                        for line in lines:
+                            latency = float(line.strip())
+                            cong_latencies.append(latency)
+
+                mean_cong = sum(cong_latencies) / len(cong_latencies)
+
+
                 iterations = 0
+                latencies = []
                 with open(csv_path, 'r') as file2:
                         lines = file2.readlines()[2:]  # Skip the first line
                         iterations = len(lines)
+                        for line in lines:
+                            latency = float(line.strip())
+                            latencies.append(latency)
+
+                mean_lat = sum(latencies) / len(latencies)
 
                 print(f"Message: {msg}, Burst Length: {blen}, Burst Gap: {bgap}, Iterations: {iterations}, Congested Iterations: {cong_iterations}")
 
-                factor = iterations/cong_iterations
+                factor = cong_iterations/iterations
+
+                factor = mean_lat/mean_cong
+
 
                 data['factor'].append(factor)
                 data['message'].append(msg)
-                data['cluster'].append(cluster)
+                data['cluster'].append(cluster)  
                 data['burst_length'].append(blen)
                 data['burst_gap'].append(bgap)
                 data['collective'].append(coll)
@@ -548,15 +567,15 @@ if __name__ == "__main__":
 
     folder = f"data/nanjing/burst_no_NSLB/"
 
-    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw")  
+    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
     plot_heatmaps(data, f"HEATMAP")
     CleanData(data)  
 
 
     folder = f"data/nanjing/burst_yes_NSLB/"
 
-    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw")  
-    plot_heatmaps(data, f"HEATMAP")
+    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
+    plot_heatmaps(data, f"HEATMAP NSLB")
     CleanData(data)  
 
     # nodes = 4

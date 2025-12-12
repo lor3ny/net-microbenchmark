@@ -500,7 +500,7 @@ if __name__ == "__main__":
     sns.set_palette(palette)
 
     nodes = 32
-    folder_1 = f"data/cresco8/2025_12_12__13_03_31/{nodes}/"
+    folder_1 = f"data/cresco8/2025_12_12__13_13_02/{nodes}/"
 
     for coll in collectives:
         if coll == "all2all":

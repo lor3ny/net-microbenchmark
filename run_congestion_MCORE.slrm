@@ -57,7 +57,7 @@ mkdir -p data/${SYSTEM}/${TIMESTAMP}/${SLURM_JOB_NUM_NODES}/
 
 if [ "$1" == "nanjing" ]; then
 
-    mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group1 ./build/noise_all2all &
+    mpirun --allow-run-as-root -N 1 --hostfile /root/hpc/lpiarulli/net-microbenchmark/4hosts_group1 ./build/noise_incast &
     noise_pid=$!
     if ! ps -p $noise_pid > /dev/null; then
         echo "Error: Noise process failed to start."

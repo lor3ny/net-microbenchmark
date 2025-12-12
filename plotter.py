@@ -500,7 +500,7 @@ if __name__ == "__main__":
     sns.set_palette(palette)
 
     nodes = 32
-    folder_1 = f"data/cresco8/2025_12_12__12_38_29/{nodes}/"
+    folder_1 = f"data/cresco8/2025_12_12__12_52_52/{nodes}/"
 
     for coll in collectives:
         if coll == "all2all":
@@ -592,3 +592,4 @@ if __name__ == "__main__":
     #     data = LoadData(data, f"HAICGU Burst", nodes , folder_2, messages=messages, cong=False, coll=coll)
     #     DrawLinePlot2(data, f"{coll_name} HAICGU Burst", palette)
     #     CleanData(data)
+

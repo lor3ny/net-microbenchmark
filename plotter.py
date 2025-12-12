@@ -477,16 +477,16 @@ def CleanData(data):
 
 if __name__ == "__main__":
 
-    # messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
-    # data = {
-    #     'Message': [],
-    #     'message_bytes': [],
-    #     'latency': [],
-    #     'bandwidth': [],
-    #     'Cluster': [],
-    #     'collective': [],
-    #     'iteration': []
-    # }
+    messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
+    data = {
+        'Message': [],
+        'message_bytes': [],
+        'latency': [],
+        'bandwidth': [],
+        'Cluster': [],
+        'collective': [],
+        'iteration': []
+    }
 
 
     # messages = ['8 B', '64 B', '512 B', '4 KiB', '32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
@@ -494,27 +494,25 @@ if __name__ == "__main__":
     # big_messages = ['32 KiB', '256 KiB', '2 MiB', '16 MiB', '128 MiB']
     # messages_scatter = ['16 MiB', '128 MiB']
     
-    # collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
+    collectives = ["all2all", "allgather"] #, "reducescatter", "allreduce", "pointpoint"]
 
-    # palette = ["#D242D2", "#2BD466", "#314EDF"]
-    # sns.set_palette(palette)
+    palette = ["#D242D2", "#2BD466", "#314EDF"]
+    sns.set_palette(palette)
 
-    # nodes = 4
-    # folder_1 = f"data/nanjing/{nodes}/all2all_yes_NSLB"
-    # folder_2 = f"data/nanjing/{nodes}/all2all_no_NSLB"
+    nodes = 32
+    folder_1 = f"data/cresco8/2025_12_12__12_38_29/{nodes}/"
 
-    # for coll in collectives:
-    #     if coll == "all2all":
-    #         coll_name = "All-to-All"
-    #     elif coll == "allgather":
-    #         coll_name = "All-Gather"
+    for coll in collectives:
+        if coll == "all2all":
+            coll_name = "All-to-All"
+        elif coll == "allgather":
+            coll_name = "All-Gather"
 
-    #     #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
-    #     data = LoadData(data, f"{coll_name} without NSLB", nodes , folder_2, messages=messages, cong=False, coll=coll)
-    #     data = LoadData(data, f"Congested {coll_name} with NSLB", nodes , folder_1, messages=messages, cong=True, coll=coll)
-    #     data = LoadData(data, f"Congested {coll_name} without NSLB", nodes , folder_2, messages=messages, cong=True, coll=coll)
-    #     DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
-    #     CleanData(data)
+        #data = LoadData(data, f"{coll_name} with NSLB", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"A2A", nodes , folder_1, messages=messages, cong=False, coll=coll)
+        data = LoadData(data, f"A2A CONG", nodes , folder_1, messages=messages, cong=True, coll=coll)
+        DrawLinePlot(data, f"{coll_name} NLSB Analysis with All-to-All Congestion", palette)
+        CleanData(data)
 
     # nodes = 4
     # folder_1 = f"data/haicgu-eth/{nodes}"
@@ -533,6 +531,7 @@ if __name__ == "__main__":
     #         data = LoadData(data, f"Nanjing RoCE", nodes , folder_2, messages=[mess], cong=False, coll=coll)
     #         DrawScatterPlot(data, f"{coll_name}{mess}HAICGU vs Nanjing scatter", palette)
     #         CleanData(data)
+
 
 
     # nodes = 8
@@ -555,28 +554,29 @@ if __name__ == "__main__":
     #     DrawLinePlot2(data, f"{coll_name} HAICGU vs Nanjing line", palette)
     #     CleanData(data)
 
-    data = {
-        'factor': [],
-        'message': [],
-        'collective': [],
-        'cluster': [],
-        'burst_length': [],
-        'burst_gap': []
-    }
+
+    # data = {
+    #    'factor': [],
+    #    'message': [],
+    #    'collective': [],
+    #    'cluster': [],
+    #    'burst_length': [],
+    #    'burst_gap': []
+    #}
 
 
-    folder = f"data/nanjing/burst_no_NSLB/"
+    #folder = f"data/nanjing/burst_no_NSLB/"
 
-    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
-    plot_heatmaps(data, f"HEATMAP")
-    CleanData(data)  
+    #data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
+    #plot_heatmaps(data, f"HEATMAP")
+    #CleanData(data)  
 
 
-    folder = f"data/nanjing/burst_yes_NSLB/"
+    #folder = f"data/nanjing/burst_yes_NSLB/"
 
-    data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
-    plot_heatmaps(data, f"HEATMAP NSLB")
-    CleanData(data)  
+    #data = LoadHeatmapData(data, f"HAICGU RoCE", folder, coll="all2all_raw_burst")  
+    #plot_heatmaps(data, f"HEATMAP NSLB")
+    #CleanData(data)  
 
     # nodes = 4
     # folder_1 = f"data/haicgu-eth/{nodes}"
